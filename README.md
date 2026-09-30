@@ -1,6 +1,6 @@
 # Proyecto integrador - Equipo Teki
  
-Nombre del proyecto: LeadSales Proyecto
+Nombre del proyecto: Teki Github Proyecto
  
 ## Estructura
 - docs/ux: entregables de UX
