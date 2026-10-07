@@ -1,0 +1,1 @@
+# Entregables de interfaz: enlaces a Figma y exportaciones de los prototipos.
