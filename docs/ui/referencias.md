@@ -1,0 +1,3 @@
+# Enlaces a dos o tres plataformas parecidas, con lo que les gusta de cada una.
+- https://dribbble.com: Tiene muchos ejemplos de diseños modernos. Es útil para encontrar inspiración para colores, tipografías, botones, íconos y distribución de los elementos.
+- https://www.behance.net/: Los diseñadores suelen mostrar sus proyectos y el proceso que siguieron para crearlos. Esto ayuda a entender por qué toman ciertas decisiones de diseño.
