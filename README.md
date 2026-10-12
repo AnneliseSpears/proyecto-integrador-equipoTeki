@@ -1,6 +1,6 @@
 # Proyecto integrador - Equipo Teki
  
-Nombre del proyecto: Teki Github Proyecto
+Nombre del proyecto: Teki Github Proyecto Integrador
  
 ## Estructura
 - docs/ux: entregables de UX
