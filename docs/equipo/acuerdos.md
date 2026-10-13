@@ -13,4 +13,4 @@ Annelise Spears -- Investigación
 Arlet Velázquez-- Formato a los entregables, cálculos e investigación. 
 Miguel Elizalde -- Interpretación estadística y colab
 
-## Linea para provocar un bloqueo
+## Linea para provocar un bloqueo 2
