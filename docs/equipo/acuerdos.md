@@ -12,3 +12,5 @@ Siempre hacer git pull antes de empezar y antes de subir.
 Annelise Spears -- Investigación
 Arlet Velázquez-- Formato a los entregables, cálculos e investigación. 
 Miguel Elizalde -- Interpretación estadística y colab
+
+## Linea para provocar un bloqueo
