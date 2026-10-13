@@ -13,13 +13,4 @@ Annelise Spears -- Investigación
 Arlet Velázquez-- Formato a los entregables, cálculos e investigación. 
 Miguel Elizalde -- Interpretación estadística y colab
 
-## Flujo de trabajo con ramas
- 
-Nadie sube cambios directamente a main.
-Cada tarea se trabaja en su propia rama, con el prefijo del area:
-  ux/   ui/   app/   docs/
-Todo cambio entra a main mediante un Pull Request.
-Cada PR lo revisa al menos un integrante distinto de quien lo abrio.
-Antes de crear una rama: git switch main y git pull.
-
 ## Linea para provocar un bloqueo
