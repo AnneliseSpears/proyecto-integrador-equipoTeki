@@ -2,6 +2,7 @@
  
 ## Plataforma evaluada
 Nombre, liga y por que la elegimos.
+- Mitec, porque
  
 ## Tarea evaluada
 La tarea, escrita como la diria un usuario.
