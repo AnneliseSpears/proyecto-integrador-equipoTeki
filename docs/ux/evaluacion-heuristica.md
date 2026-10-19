@@ -118,3 +118,5 @@ Por ejemplo:
 
 ## Que aprendimos
 Dos o tres lineas por integrante.
+
+- Annelise Spears: Aprendí que una plataforma puede contar con todas las funcionalidades necesarias, pero si estas no resultan fáciles de encontrar o de comprender, la experiencia de usuario se ve afectada. La evaluación heurística ayudó a identificar estos problemas, así como a reconocer la importancia de contar con interfaces bien diseñadas y fáciles de usar.
