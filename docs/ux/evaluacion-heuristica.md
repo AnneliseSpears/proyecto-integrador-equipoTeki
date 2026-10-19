@@ -15,17 +15,17 @@ H1 a H8, ordenados de mayor a menor prioridad.
 - **Prioridad:** Alta.
 - **Dónde:** Menú principal y apartados de información académica.
 - **Principio:** Correspondencia entre el sistema y el mundo real.
-- **Qué pasa:*** Si se utilizan nombres de secciones, abreviaturas o términos institucionales poco claros, el usuario puede tener dificultades para identificar dónde consultar su horario.
+- **Qué pasa:** Si se utilizan nombres de secciones, abreviaturas o términos institucionales poco claros, el usuario puede tener dificultades para identificar dónde consultar su horario.
 - **Consecuencia:** Puede entrar en secciones incorrectas, perder tiempo y necesitar regresar al menú anterior.
 - **Evidencia:** Captura del menú donde aparezcan los nombres de las secciones que podrían resultar ambiguos.
 
-### H2. Título corto de la falla
- 
-- **Dónde:** pantalla o paso exacto donde ocurre
-- **Principio:** cuál de los seis se viola
-- **Qué pasa:** descripción objetiva de lo observado
-- **Consecuencia:** qué le cuesta al usuario (tiempo, error, abandono)
-- **Evidencia:** captura de pantalla, con los datos personales tapados
+### H2. Información académica difícil de localizar
+- **Prioridad:** Alta.
+- **Dónde:** Sección de horario o consulta de materias.
+- **Principio:** Reconocimiento en lugar de memorización.
+- **Qué pasa:** Si la información está distribuida entre diferentes pantallas, el usuario debe recordar dónde encontró cada dato para consultar sus materias, horarios y salones.
+- **Consecuencia:** Incrementa el esfuerzo mental y dificulta la consulta rápida de información.
+- **Evidencia:** Capturas de las distintas pantallas necesarias para reunir los datos del horario.
 
 ### H3. Título corto de la falla
  
