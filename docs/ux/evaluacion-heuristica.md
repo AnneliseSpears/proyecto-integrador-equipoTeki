@@ -11,21 +11,19 @@ Mitec, porque es una plataforma que los estudiantes del Tecnológico de Monterre
 ## Hallazgos
 H1 a H8, ordenados de mayor a menor prioridad.
 
-### H1. Falta de claridad en los nombres de las secciones
-- **Prioridad:** Alta.
-- **Dónde:** Menú principal y apartados de información académica.
-- **Principio:** Correspondencia entre el sistema y el mundo real.
-- **Qué pasa:** Si se utilizan nombres de secciones, abreviaturas o términos institucionales poco claros, el usuario puede tener dificultades para identificar dónde consultar su horario.
+### H1. Falta de claridad en la página de inicio
+- **Dónde:** Menú principal
+- **Principio:** Significante
+- **Qué pasa:** La página de inicio puede resultar difícil de entender, ya que los distintos elementos que aparecen en ella cambian y todo está organizado de una forma muy caótica.
 - **Consecuencia:** Puede entrar en secciones incorrectas, perder tiempo y necesitar regresar al menú anterior.
-- **Evidencia:** Captura del menú donde aparezcan los nombres de las secciones que podrían resultar ambiguos.
+- **Evidencia:** ![alt text](image-1.png)
 
 ### H2. Información académica difícil de localizar
-- **Prioridad:** Alta.
-- **Dónde:** Sección de horario o consulta de materias.
-- **Principio:** Reconocimiento en lugar de memorización.
-- **Qué pasa:** Si la información está distribuida entre diferentes pantallas, el usuario debe recordar dónde encontró cada dato para consultar sus materias, horarios y salones.
+- **Dónde:** Barra de búsqueda
+- **Principio:** Visibilidad
+- **Qué pasa:** Debes conocer el nombre específico de la página que buscas; no existe una búsqueda por palabras clave.
 - **Consecuencia:** Incrementa el esfuerzo mental y dificulta la consulta rápida de información.
-- **Evidencia:** Capturas de las distintas pantallas necesarias para reunir los datos del horario.
+- **Evidencia:** ![alt text](image.png)
 
 ### H3. Título corto de la falla
  
