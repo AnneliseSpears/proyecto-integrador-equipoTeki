@@ -93,6 +93,7 @@ Severidad y frecuencia de cada hallazgo.
 
 ## Propuestas de mejora
 Las tres mejoras para los hallazgos prioritarios.
+Por ejemplo: 
 
 ### Mejora para H1
  
@@ -109,41 +110,6 @@ Las tres mejoras para los hallazgos prioritarios.
 - **Resultado esperado:** el usuario corrige en el momento, no al final
 
 ### Mejora para H3
- 
-- **Problema:** el formulario no avisa del formato de fecha hasta que falla el envío
-- **Propuesta:** mostrar el formato esperado dentro del campo y validar al salir de él
-- **Principio que resuelve:** restricciones y retroalimentación
-- **Resultado esperado:** el usuario corrige en el momento, no al final
-
-### Mejora para H4
- 
-- **Problema:** el formulario no avisa del formato de fecha hasta que falla el envío
-- **Propuesta:** mostrar el formato esperado dentro del campo y validar al salir de él
-- **Principio que resuelve:** restricciones y retroalimentación
-- **Resultado esperado:** el usuario corrige en el momento, no al final
-
-### Mejora para H5
- 
-- **Problema:** el formulario no avisa del formato de fecha hasta que falla el envío
-- **Propuesta:** mostrar el formato esperado dentro del campo y validar al salir de él
-- **Principio que resuelve:** restricciones y retroalimentación
-- **Resultado esperado:** el usuario corrige en el momento, no al final
-
-### Mejora para H6
- 
-- **Problema:** el formulario no avisa del formato de fecha hasta que falla el envío
-- **Propuesta:** mostrar el formato esperado dentro del campo y validar al salir de él
-- **Principio que resuelve:** restricciones y retroalimentación
-- **Resultado esperado:** el usuario corrige en el momento, no al final
-
-### Mejora para H7
- 
-- **Problema:** el formulario no avisa del formato de fecha hasta que falla el envío
-- **Propuesta:** mostrar el formato esperado dentro del campo y validar al salir de él
-- **Principio que resuelve:** restricciones y retroalimentación
-- **Resultado esperado:** el usuario corrige en el momento, no al final
-
-### Mejora para H8
  
 - **Problema:** el formulario no avisa del formato de fecha hasta que falla el envío
 - **Propuesta:** mostrar el formato esperado dentro del campo y validar al salir de él
