@@ -1,22 +1,23 @@
 # Evaluacion heuristica - Equipo Teki
  
 ## Plataforma evaluada
-Nombre, liga y por que la elegimos.
-- Mitec, porque
+Mitec, porque es una plataforma que los estudiantes del Tecnológico de Monterrey utilizan para consultar información académica y acceder a servicios universitarios; por lo tanto, es una herramienta que todos empleamos con frecuencia. Evaluarla nos permite identificar problemas de usabilidad que pueden afectar a tareas habituales, como consultar horarios, revisar calificaciones u obtener información sobre trámites administrativos.
  
 ## Tarea evaluada
-La tarea, escrita como la diria un usuario.
- 
+- Tarea: “Quiero consultar mis calificaciones del semestre pasado para revisar mi desempeño académico”.
+- Tarea: “Quiero revisar mi estado de cuenta para saber cuánto debo pagar de colegiatura”.
+- Tarea: “Quiero consultar los requisitos que necesito para realizar un trámite escolar”.
+
 ## Hallazgos
 H1 a H8, ordenados de mayor a menor prioridad.
 
-### H1. Título corto de la falla
- 
-- **Dónde:** pantalla o paso exacto donde ocurre
-- **Principio:** cuál de los seis se viola
-- **Qué pasa:** descripción objetiva de lo observado
-- **Consecuencia:** qué le cuesta al usuario (tiempo, error, abandono)
-- **Evidencia:** captura de pantalla, con los datos personales tapados
+### H1. Falta de claridad en los nombres de las secciones
+- **Prioridad:** Alta.
+- **Dónde:** Menú principal y apartados de información académica.
+- **Principio:** Correspondencia entre el sistema y el mundo real.
+- **Qué pasa:*** Si se utilizan nombres de secciones, abreviaturas o términos institucionales poco claros, el usuario puede tener dificultades para identificar dónde consultar su horario.
+- **Consecuencia:** Puede entrar en secciones incorrectas, perder tiempo y necesitar regresar al menú anterior.
+- **Evidencia:** Captura del menú donde aparezcan los nombres de las secciones que podrían resultar ambiguos.
 
 ### H2. Título corto de la falla
  
