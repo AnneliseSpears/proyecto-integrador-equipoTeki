@@ -74,22 +74,20 @@ H1 a H8, ordenados de mayor a menor prioridad.
 - **Evidencia:** captura de pantalla, con los datos personales tapados
  
 ## Matriz de priorizacion
-Severidad y frecuencia de cada hallazgo.
-- H1: Nivel, significa, criterio, frecuencia
+Cada hallazgo se calificó por severidad (1 cosmética, 2 menor, 3 mayor, 4 crítica) y por frecuencia (pocas veces o casi cada uso). La lista de hallazgos está ordenada según este resultado.
 
-- H2: 
-
-- H3: 
-
-- H4: 
-
-- H5:
-
-- H6:
-
-- H7:
-
-- H8:
+| # | Hallazgo | Principio | Severidad | Frecuencia | Resultado |
+|---|---|---|---|---|---|
+| H1 | Botón "Acceso Alumnos" no responde | Retroalimentación | 4 · Crítica | Casi cada uso | Atender primero |
+| H2 | La página no carga al entrar desde la URL | Retroalimentación | 3 · Mayor | Casi cada uso | Atender primero |
+| H3 | Lentitud entre la app y el navegador | Retroalimentación | 3 · Mayor | Casi cada uso | Atender primero |
+| H4 | No hay botón de búsqueda | Visibilidad | 3 · Mayor | Casi cada uso | Atender primero |
+| H5 | Error de autenticación con dominio Tecmilenio | Restricciones | 4 · Crítica | Pocas veces | Atender después |
+| H6 | Redirección a TecMilenio al iniciar sesión | Mapeo | 4 · Crítica | Pocas veces | Atender después |
+| H7 | Código del autenticador en cada acceso | Restricciones | 2 · Menor | Casi cada uso | Atender después |
+| H8 | Menú desordenado | Mapeo | 2 · Menor | Casi cada uso | Atender después |
+| H9 | Tipografías e imágenes inconsistentes | Consistencia | 1 · Cosmética | Casi cada uso | Atender después |
+| H10 | Chatbot con opciones limitadas | Visibilidad | 2 · Menor | Pocas veces | Dejar al final |
 
 ## Propuestas de mejora
 Las tres mejoras para los hallazgos prioritarios.
