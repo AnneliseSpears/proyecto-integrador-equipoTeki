@@ -98,30 +98,31 @@ Cada hallazgo se calificó por severidad (1 cosmética, 2 menor, 3 mayor, 4 crí
 | H9 | Tipografías e imágenes inconsistentes | Consistencia | 1 · Cosmética | Casi cada uso | Atender después |
 | H10 | Chatbot con opciones limitadas | Visibilidad | 2 · Menor | Pocas veces | Dejar al final |
 
+
 ## Propuestas de mejora
-Las tres mejoras para los hallazgos prioritarios.
-Por ejemplo: 
 
-### Mejora para H1
- 
-- **Problema:** el formulario no avisa del formato de fecha hasta que falla el envío
-- **Propuesta:** mostrar el formato esperado dentro del campo y validar al salir de él
-- **Principio que resuelve:** restricciones y retroalimentación
-- **Resultado esperado:** el usuario corrige en el momento, no al final
+### Mejora para H1. Botón inoperativo para descargar la póliza
 
-### Mejora para H2
- 
-- **Problema:** el formulario no avisa del formato de fecha hasta que falla el envío
-- **Propuesta:** mostrar el formato esperado dentro del campo y validar al salir de él
-- **Principio que resuelve:** restricciones y retroalimentación
-- **Resultado esperado:** el usuario corrige en el momento, no al final
+- **Problema:** Al pulsar “Acceso Alumnos”, no ocurre nada y no se puede descargar la póliza desde el móvil.
+- **Propuesta:** Hacer que el botón abra directamente el documento. Mientras carga, mostrar “Abriendo póliza…” y, si falla, ofrecer opciones para reintentar o descargarla desde otro enlace.
+- **Principio que resuelve:** Retroalimentación y significante.
+- **Resultado esperado:** El usuario sabe que su acción fue registrada y puede obtener la póliza o recuperarse del error.
 
-### Mejora para H3
- 
-- **Problema:** el formulario no avisa del formato de fecha hasta que falla el envío
-- **Propuesta:** mostrar el formato esperado dentro del campo y validar al salir de él
-- **Principio que resuelve:** restricciones y retroalimentación
-- **Resultado esperado:** el usuario corrige en el momento, no al final
+### Mejora para H2. Error al asignar el dominio Tecmilenio
+
+- **Problema:** El sistema identifica al alumno como parte de Tecmilenio y bloquea su acceso al Portal de Salud.
+- **Propuesta:** Corregir la asignación automática de institución según la cuenta. Si no se puede identificar, pedir al usuario que seleccione su institución y explicar cómo corregir la elección.
+- **Principio que resuelve:** Restricciones y retroalimentación.
+- **Resultado esperado:** Se evitan redirecciones a una institución incorrecta y el usuario puede corregir la elección antes de quedar bloqueado.
+
+### Mejora para H3. Redirección incorrecta después de iniciar sesión
+
+- **Problema:** Después de ingresar sus credenciales en mitec, el usuario llega a una página de Tecmilenio y no sabe si está en el sitio esperado.
+- **Propuesta:** Mantener la redirección vinculada al portal solicitado y mostrar el nombre de la institución de destino antes de continuar. Si se dirige al lugar equivocado, ofrecer una opción clara para regresar a mitec.
+- **Principio que resuelve:** Mapeo y retroalimentación.
+- **Resultado esperado:** El usuario entiende a dónde lo lleva el inicio de sesión y puede llegar al portal correcto sin repetir el proceso.
+
+
 
 ## Que aprendimos
 Dos o tres lineas por integrante.
@@ -131,3 +132,5 @@ Dos o tres lineas por integrante.
 - Miguel Elizalde: Aprendí que encontrar fallas es solo la mitad del trabajo; lo difícil es decidir cuál arreglar primero. Al cruzar severidad con frecuencia me di cuenta de que una falla menor que aparece en cada uso puede importar más que una crítica que casi nunca pasa. También entendí que si todo se marca como crítico, nada lo es.
 
 - Arlet Velázquez: Al analizar la app de miTec, me di cuenta de lo crítico que es tener una aplicación móvil bien optimizada, ya que no pude completar la tarea correctamente por fallas de usabilidad desde el celular. Aprendí que una mala interfaz causa fricción innecesaria en cosas cotidianas y que aplicar los seis principios permite identificar con precisión dónde y por qué se rompe la experiencia de usuario. Además, entendí la importancia de priorizar los errores por su nivel de severidad en lugar de querer arreglar todo a la vez, lo que nos ayuda a enfocar los esfuerzos en lo que realmente le frustra al estudiante.
+
+- Francesco Mosso: Aprendí que detectar un problema no es suficiente; también hay que entender cómo afecta al usuario y proponer una mejora concreta. Al trabajar en las propuestas, comprendí que priorizar por severidad y frecuencia ayuda a enfocarse primero en los obstáculos que impiden completar una tarea. También entendí que la plataforma debe indicar con claridad qué está pasando mientras el usuario la utiliza.
