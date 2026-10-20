@@ -118,3 +118,5 @@ Por ejemplo:
 Dos o tres lineas por integrante.
 
 - Annelise Spears: Aprendí que una plataforma puede contar con todas las funcionalidades necesarias, pero si estas no resultan fáciles de encontrar o de comprender, la experiencia de usuario se ve afectada. La evaluación heurística ayudó a identificar estos problemas, así como a reconocer la importancia de contar con interfaces bien diseñadas y fáciles de usar.
+
+- Miguel Elizalde: Aprendí que encontrar fallas es solo la mitad del trabajo; lo difícil es decidir cuál arreglar primero. Al cruzar severidad con frecuencia me di cuenta de que una falla menor que aparece en cada uso puede importar más que una crítica que casi nunca pasa. También entendí que si todo se marca como crítico, nada lo es.
