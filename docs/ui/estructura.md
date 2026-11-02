@@ -4,8 +4,8 @@
 https://www.figma.com/design/hqG6A2stQoI7cYATZNNL0J/Laboratorio-6?node-id=0-1&t=u1p3idaJjROVAZ1e-1
  
 ## Pantallas
-1. Portal Principal (Inicio)|
-Permite al usuario encontrar los servicios disponibles y acceder directamente a la opción de "Obtener Constancia Actualizada", evitando que tenga que buscar el servicio en diferentes portales.|
+1. Portal Principal (Inicio)
+Permite al usuario encontrar los servicios disponibles y acceder directamente a la opción de "Obtener Constancia Actualizada", evitando que tenga que buscar el servicio en diferentes portales.
 
 2. Inicio de Sesión Integrado
 Permite ingresar las credenciales y completar la verificación CAPTCHA sin perder de vista el trámite seleccionado. Busca mantener la continuidad mediante una autenticación integrada (SSO).
