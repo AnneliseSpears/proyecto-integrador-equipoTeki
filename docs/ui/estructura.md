@@ -4,7 +4,7 @@
 
 * **Nombre del archivo:** `Equipo Teky - Plataforma de Generación de Constancias`
 
-* **Enlace de Figma:** 
+* **Enlace de Figma:** https://www.figma.com/design/hqG6A2stQoI7cYATZNNL0J/Laboratorio-6?node-id=0-1&t=FpzCHxzOcR3iqE9b-1
 
 ## Pantallas
 
