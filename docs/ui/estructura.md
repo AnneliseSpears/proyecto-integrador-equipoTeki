@@ -135,6 +135,8 @@ Respuesta: "Lo primero que vi fue el mensaje 'No hay información disponible', p
 Pregunta 3: ¿Qué harías primero si fueras el usuario?
 
 Respuesta: "Presionaría el botón 'Intentar nuevamente' para ver si la información aparece. Si sigue sin funcionar, contactaría al área de soporte."
+
+* Eliminamos los rectángulos grises porque parecían ser espacios reservados para tarjetas o datos. También hicimos que el mensaje del estado vacío fuera el elemento principal de la pantalla, para que el usuario pueda entender inmediatamente qué sucedió y qué debe hacer a continuación. Por último, aumentamos ligeramente el tamaño del texto para facilitar su lectura.
  
 ## Pendiente para manana
 Que pantallas faltan por convertir en wireframe: No falta nada en términos de convertiendo el sketch a un wireframe, sin embargo si tenemos que convertir también User Flow y Sitemap, entonces faltamos estos.
