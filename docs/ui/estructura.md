@@ -116,3 +116,25 @@
 * Confirmar si el sistema institucional permite implementar autenticación integrada mediante SSO (`OAuth2 / SAML`).
 
 * Identificar la base de datos específica y el microservicio backend del que se obtendrá el stream binario para la generación final del archivo PDF.
+
+## Wireframe de la pantalla principal
+Nuestro sketch ya tenía bastante detalle, así que únicamente cambiamos los colores de algunos botones a verde o rojo para indicar su estado.
+ 
+## Problemas que aparecieron con contenido real
+En la Pantalla Principal, hay algunos recuadros o botones que sobresalen ligeramente de la parte inferior del sketch, pero decidimos no modificarlos porque consideramos que representaban adecuadamente la posibilidad de desplazarse hacia abajo en la página para ver más información.
+ 
+## Prueba de los cinco segundos
+Pregunta 1: ¿Qué crees que hace esta pantalla?
+
+Respuesta: "Parece ser una plataforma para consultar o generar una constancia, pero en este momento no hay información disponible para mostrar."
+
+Pregunta 2: ¿Qué fue lo primero que viste?
+
+Respuesta: "Lo primero que vi fue el mensaje 'No hay información disponible', porque está en el centro y tiene letras más grandes. Después vi el botón verde de 'Intentar nuevamente'."
+
+Pregunta 3: ¿Qué harías primero si fueras el usuario?
+
+Respuesta: "Presionaría el botón 'Intentar nuevamente' para ver si la información aparece. Si sigue sin funcionar, contactaría al área de soporte."
+ 
+## Pendiente para manana
+Que pantallas faltan por convertir en wireframe: No falta nada en términos de convertiendo el sketch a un wireframe, sin embargo si tenemos que convertir también User Flow y Sitemap, entonces faltamos estos.
