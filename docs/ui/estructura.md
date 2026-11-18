@@ -8,135 +8,150 @@
 
 ## Pantallas
 
-1. **Portal Principal (Inicio)**
+1. **Dashboard Principal**
 
-   * **Descripción:** Pantalla de entrada a la plataforma donde el usuario encuentra los servicios disponibles y puede acceder directamente a la opción de "Obtener Constancia Actualizada" sin tener que navegar por otros portales.
+   * **Descripción:** Pantalla inicial de la plataforma donde el equipo de Customer Success puede consultar una visión general de la adopción y actividad de las cuentas. Incluye indicadores principales, tendencias mensuales de uso y una lista de cuentas que presentan disminuciones importantes en su actividad. También permite aplicar filtros por período, segmento, plan y estado de la cuenta.
 
-   * **Objetivo de UX:** Eliminar la búsqueda dispersa y reducir el número de clics iniciales.
+   * **Objetivo de UX:** Facilitar la identificación rápida de patrones de baja adopción y posibles señales tempranas de churn, sin tener que revisar cada cuenta individualmente.
 
-2. **Inicio de Sesión Integrado (SSO)**
+2. **Explorador de Cuentas**
 
-   * **Descripción:** Pantalla donde el usuario ingresa sus credenciales y completa la verificación CAPTCHA para acceder al servicio. Mantiene visible el trámite seleccionado y permite una autenticación directa mediante Single Sign-On (SSO).
+   * **Descripción:** Pantalla que permite buscar, filtrar y comparar cuentas mediante una tabla con información como Account ID, nombre, estado, antigüedad, número de chats, mensajes, leads, días activos y variación de actividad. Desde esta pantalla, el usuario puede seleccionar una cuenta para consultar su información detallada.
 
-   * **Objetivo de UX:** Garantizar la continuidad del trámite evitando que el usuario pierda el contexto de la solicitud elegida.
+   * **Objetivo de UX:** Simplificar la búsqueda y priorización de cuentas que requieren una revisión más profunda por parte del equipo de Customer Success.
 
-3. **Generación de Constancia**
+3. **Perfil 360 de la Cuenta**
 
-   * **Descripción:** Pantalla donde el usuario puede consultar su información y generar su constancia actualizada mediante un único botón de acción principal. Presenta una interfaz simplificada, sin filtros ni campos innecesarios.
+   * **Descripción:** Pantalla que reúne la información disponible de una cuenta en un solo lugar. Incluye datos generales, plan, segmento, antigüedad, estado, indicadores de adopción de funcionalidades y canales, así como el historial mensual de actividad. También permite consultar información adicional de soporte cuando se encuentra disponible.
 
-   * **Objetivo de UX:** Disminuir la sobrecarga cognitiva durante la consulta y generación del documento.
+   * **Objetivo de UX:** Proporcionar una visión integral del comportamiento de cada cuenta para facilitar la investigación de posibles problemas de adopción y continuidad de uso.
 
-4. **Descarga de Constancia**
+4. **Análisis de Adopción y Señales de Churn**
 
-   * **Descripción:** Pantalla donde se confirma la generación del documento y se permite al usuario descargar su constancia actualizada.
+   * **Descripción:** Pantalla enfocada en analizar la relación entre la adopción de funcionalidades, la actividad de las cuentas y la cancelación. Incluye gráficos comparativos, tendencias de uso e indicadores de disminución de actividad. Permite identificar patrones que podrían funcionar como señales de alerta y revisar las cuentas que presentan deterioro persistente en su actividad.
 
-   * **Objetivo de UX:** Proporcionar una confirmación clara y la entrega inmediata del archivo PDF final.
-
-5. **Gestión de Errores y Ayuda Contextual**
-
-   * **Descripción:** Pantalla que proporciona retroalimentación inmediata cuando ocurre un error en la validación de credenciales o CAPTCHA. Incluye instrucciones contextuales para ayudar al usuario a corregir el problema sin abandonar la plataforma.
-
-   * **Objetivo de UX:** Guiar al usuario paso a paso ante un fallo sin obligarlo a reiniciar todo el proceso.
+   * **Objetivo de UX:** Ayudar al equipo a comprender qué comportamientos podrían anticipar una cancelación y respaldar decisiones de seguimiento mediante información analítica.
 
 ## Trazabilidad con UX
 
-1. **Autenticación y acceso directo**
+1. **Identificación rápida de cuentas con baja adopción**
 
-   * **Requerimiento atendido:** Acceso sin rodeos al servicio seleccionado.
+   * **Requerimiento atendido:** Permitir que el equipo de Customer Success identifique cuentas con niveles bajos o decrecientes de actividad.
 
-   * **Pantallas involucradas:** Portal Principal e Inicio de Sesión Integrado.
+   * **Pantallas involucradas:** Dashboard Principal y Explorador de Cuentas.
 
-   * **Justificación / Solución UX:** Redirección directa al servicio seleccionado y autenticación integrada mediante SSO, manteniendo visible el destino del usuario.
+   * **Justificación / Solución UX:** Se presentan indicadores generales y tendencias de actividad en el Dashboard, mientras que el Explorador permite filtrar y ordenar las cuentas para identificar aquellas que requieren atención.
 
-2. **Simplificación de la interfaz de generación**
+2. **Centralización de la información de cada cuenta**
 
-   * **Requerimiento atendido:** Fluidez en la obtención del documento.
+   * **Requerimiento atendido:** Facilitar la consulta de información de una cuenta sin tener que revisar múltiples fuentes de datos por separado.
 
-   * **Pantallas involucradas:** Generación de Constancia y Descarga de Constancia.
+   * **Pantallas involucradas:** Explorador de Cuentas y Perfil 360 de la Cuenta.
 
-   * **Justificación / Solución UX:** Eliminación de campos y filtros innecesarios, priorizando una sola acción principal para generar y descargar el documento.
+   * **Justificación / Solución UX:** Se propone una vista consolidada que reúne información del perfil, adopción, actividad mensual e historial disponible, facilitando la investigación del comportamiento de cada cuenta.
 
-3. **Gestión de errores e instructivos contextuales**
+3. **Análisis de señales relacionadas con churn**
 
-   * **Requerimiento atendido:** Prevención de abandono por errores de credenciales o CAPTCHA.
+   * **Requerimiento atendido:** Identificar patrones de baja adopción y disminución de actividad que podrían estar relacionados con una futura cancelación.
 
-   * **Pantallas involucradas:** Inicio de Sesión Integrado y Gestión de Errores y Ayuda.
+   * **Pantallas involucradas:** Dashboard Principal, Perfil 360 de la Cuenta y Análisis de Adopción y Señales de Churn.
 
-   * **Justificación / Solución UX:** Validación de credenciales y CAPTCHA con retroalimentación inmediata, mensajes claros e instrucciones para corregir errores.
+   * **Justificación / Solución UX:** Se incorporan gráficos comparativos e indicadores de actividad para facilitar la interpretación de posibles señales de riesgo. Estas señales se presentan como asociaciones que requieren validación, no como evidencia de causalidad ni como probabilidades de churn ya calculadas.
 
 ## Origen de los Datos
 
-| No. | Pantalla / Bloque | Datos necesarios | Origen del dato / Fuente | 
-| ----- | ----- | ----- | ----- | 
-| **1** | **Portal Principal** | Nombre del servicio y opciones disponibles | Información institucional del portal (`config/services_catalog.json`) | 
-| **2** | **Inicio de Sesión** | Credenciales (Usuario y contraseña) | Datos ingresados por el usuario (`st.text_input`) | 
-| **3** | **Inicio de Sesión** | Validación de credenciales | Sistema de autenticación institucional / Proveedor SSO (`OAuth2 / SAML`) | 
-| **4** | **Inicio de Sesión** | Verificación CAPTCHA | Servicio externo de verificación CAPTCHA (`reCAPTCHA v3 / hCaptcha`) | 
-| **5** | **Generación de Constancia** | Información personal del usuario | Base de datos institucional (`db_usuarios.tb_perfil_contribuyente`) | 
-| **6** | **Generación de Constancia** | Información necesaria para generar la constancia | Sistema institucional responsable del trámite (`api/v1/constancias/status`) | 
-| **7** | **Descarga de Constancia** | Documento generado | Sistema de generación de constancias (`pdf_generator_service`) | 
-| **8** | **Gestión de Errores y Ayuda** | Mensajes de error e instrucciones | Reglas de validación y documentación de ayuda (`config/error_dictionary.py`) | 
+| No. | Pantalla / Bloque | Datos necesarios | Origen del dato / Fuente |
+| ----- | ----- | ----- | ----- |
+| **1** | **Dashboard Principal** | Identificador, nombre, segmento, plan y estado de las cuentas | Perfil de cuentas (`perfil_cuentas.csv`) |
+| **2** | **Dashboard Principal** | Número mensual de chats, mensajes, leads y días activos | Panel mensual (`panel_mensual.csv`) |
+| **3** | **Dashboard Principal** | Cuentas canceladas y fechas de cancelación | Archivo de cancelaciones (`cancelaciones.csv`) |
+| **4** | **Explorador de Cuentas** | Account ID, nombre, segmento, plan, antigüedad y estado | Perfil de cuentas (`perfil_cuentas.csv`) |
+| **5** | **Explorador de Cuentas** | Actividad mensual y variación de chats, mensajes y leads | Panel mensual (`panel_mensual.csv`) |
+| **6** | **Perfil 360 de la Cuenta** | Información general y características de la cuenta | Perfil de cuentas (`perfil_cuentas.csv`) |
+| **7** | **Perfil 360 de la Cuenta** | Indicadores de uso y conexión de canales o funcionalidades | Perfil de cuentas (`perfil_cuentas.csv`), sujeto a disponibilidad de los campos |
+| **8** | **Perfil 360 de la Cuenta** | Historial de chats, mensajes, leads y días activos | Panel mensual (`panel_mensual.csv`) |
+| **9** | **Perfil 360 de la Cuenta** | Información de conversaciones y soporte disponible | Conversaciones y soporte (`reuniones_samu.json` y `soporte_intercom.json`), según los datos disponibles |
+| **10** | **Análisis de Adopción y Señales de Churn** | Indicadores de caída de actividad y uso reducido durante períodos consecutivos | Panel mensual (`panel_mensual.csv`) |
+| **11** | **Análisis de Adopción y Señales de Churn** | Estado de cancelación y fechas asociadas | Archivo de cancelaciones (`cancelaciones.csv`) |
+| **12** | **Análisis de Adopción y Señales de Churn** | Indicadores de adopción y conexión de canales | Perfil de cuentas (`perfil_cuentas.csv`) |
 
 ## User Flow y Sitemap
 
 ### Coherencia de Flujo y Estructura
 
-* **Objetivo del Usuario:** "Quiero consultar y descargar mi constancia actualizada en formato PDF sin perderme en formularios ni trabarme si equivoco mi contraseña."
+* **Objetivo del Usuario:** "Quiero identificar qué cuentas presentan señales de baja adopción para investigar si podrían estar en riesgo de cancelación y decidir cuáles necesitan seguimiento por parte de Customer Success."
 
-* **Punto de Dolor Identificado:** Falla o confusión frecuente durante la validación del CAPTCHA o ingreso de credenciales de acceso.
+* **Punto de Dolor Identificado:** La información sobre adopción, actividad y comportamiento de las cuentas se encuentra distribuida entre diferentes fuentes de datos. Esto dificulta identificar rápidamente qué clientes presentan disminuciones de uso y cuáles requieren una investigación más profunda.
 
-* **Construibilidad (Streamlit/Dash):** Bocetos estructurados estrictamente en filas apiladas y columnas, manteniendo filtros e información del perfil en la barra lateral izquierda (`sidebar`).
+* **Construibilidad (Streamlit/Dash):** La plataforma se plantea como una interfaz interna de escritorio, organizada mediante una barra lateral de navegación y filtros, con indicadores, gráficos y tablas en el área principal. Las pantallas se estructuran mediante filas y columnas para facilitar su implementación en Streamlit o Dash.
 
 ### Leyenda de Accesos del Sitemap
 
-*  **Verde (Pública):** Pantalla de entrada accesible a cualquier visitante sin autenticar.
+* **Verde (Inicio / Dashboard):** Pantalla principal desde la que se accede a los indicadores generales y a las demás secciones de la plataforma.
 
-* **Amarillo (Autenticación):** Acceso protegido y validación mediante Single Sign-On (SSO).
+* **Amarillo (Exploración):** Módulo para buscar, filtrar y comparar cuentas.
 
-* **Azul (Trámite Protegido):** Módulos de consulta, generación y descarga del documento.
+* **Azul (Información detallada):** Perfil 360 que reúne los datos e historial de una cuenta específica.
 
-* **Rojo (Excepción / Ayuda):** Interfaz para resolución de errores e instrucciones contextuales.
+* **Morado (Análisis):** Módulo para estudiar tendencias de adopción y posibles señales relacionadas con churn.
 
 ## Decisiones y Dudas
 
 ### Decisiones tomadas
 
-* Se priorizó un acceso directo a "Obtener Constancia Actualizada" desde el portal principal para evitar que el usuario tenga que buscar nuevamente el servicio.
+* Se eligió un Dashboard Principal como punto de entrada para que el equipo de Customer Success pueda identificar rápidamente las tendencias generales de actividad y adopción.
 
-* Se propuso una autenticación integrada (SSO) para mantener la continuidad entre el portal y el inicio de sesión.
+* Se incluyó un Explorador de Cuentas para facilitar la búsqueda, comparación y priorización de clientes que presentan posibles señales de deterioro.
 
-* **Filtros avanzados de búsqueda:** Se excluyeron porque no son necesarios para el flujo principal de descarga y pueden confundir al usuario.
+* Se propuso un Perfil 360 para centralizar la información disponible de cada cuenta y evitar que el usuario tenga que consultar distintas fuentes por separado.
 
-* **Pantallas administrativas:** No se incluyeron porque el alcance del proyecto se enfoca en la experiencia del usuario que obtiene su constancia.
+* **Indicadores de actividad:** Se priorizaron métricas como número de chats, mensajes, leads y días activos, ya que permiten observar cambios en el comportamiento de uso de las cuentas.
 
-* **Diseño para Framework (Streamlit/Dash):** Todos los elementos se organizaron verticalmente en bloques apilados para garantizar que se puedan programar mediante layout estándar de filas/columnas.
+* **Señales de churn:** Se decidió presentar disminuciones de actividad y patrones de baja adopción como posibles señales de alerta, sin asumir que necesariamente provocan una cancelación.
+
+* **Datos faltantes:** Se decidió diferenciar entre información no disponible y una funcionalidad que realmente no está conectada. Esto es especialmente importante para los indicadores de conexión de canales.
+
+* **Probabilidad de churn:** No se incluyó una puntuación de riesgo generada por un modelo predictivo, ya que no debe presentarse como resultado validado si todavía no se cuenta con un modelo entrenado y evaluado.
+
+* **Diseño para Framework (Streamlit/Dash):** Se organizaron los elementos en bloques de información, tablas y gráficos, manteniendo una barra lateral para la navegación y los filtros principales.
 
 ### Dudas / Temas por resolver
 
-* Confirmar si el sistema institucional permite implementar autenticación integrada mediante SSO (`OAuth2 / SAML`).
+* Confirmar cuáles indicadores de adopción y conexión de canales están disponibles para todas las cuentas y cuáles presentan valores faltantes.
 
-* Identificar la base de datos específica y el microservicio backend del que se obtendrá el stream binario para la generación final del archivo PDF.
+* Definir cómo se calcularán y visualizarán los cambios porcentuales de actividad entre meses para evitar comparaciones incorrectas.
+
+* Determinar cómo se tratarán los períodos incompletos, especialmente agosto de 2026, al comparar tendencias de actividad.
+
+* Confirmar qué información de conversaciones y soporte puede integrarse directamente al Perfil 360 y qué indicadores pueden calcularse de manera confiable.
+
+* Definir si posteriormente se incorporará un modelo de Machine Learning para estimar el riesgo de churn, una vez que se cuente con resultados validados.
 
 ## Wireframe de la pantalla principal
-Nuestro sketch ya tenía bastante detalle, así que únicamente cambiamos los colores de algunos botones a verde o rojo para indicar su estado.
- 
+
+El Dashboard Principal se diseñó como la primera pantalla de la plataforma LeadSales – Adoption & Churn Monitor. Se priorizó la visualización de indicadores generales, gráficos de actividad y una tabla con las cuentas que presentan mayores disminuciones de uso.
+
+La intención fue que el usuario pudiera comprender rápidamente el estado general de las cuentas y localizar aquellas que requieren una revisión más detallada. También se consideró una barra lateral para facilitar la navegación entre las cuatro pantallas principales y aplicar filtros sin saturar el área central.
+
 ## Problemas que aparecieron con contenido real
-En la Pantalla Principal, hay algunos recuadros o botones que sobresalen ligeramente de la parte inferior del sketch, pero decidimos no modificarlos porque consideramos que representaban adecuadamente la posibilidad de desplazarse hacia abajo en la página para ver más información.
- 
+
+Al incorporar información real en los bocetos, fue necesario considerar que algunos indicadores podían presentar valores faltantes o períodos incompletos. Por ejemplo, no todas las cuentas cuentan con información disponible sobre la conexión de sus canales, y los registros de agosto de 2026 no representan un mes completo.
+
+Por esta razón, se decidió evitar mostrar valores faltantes como si fueran ceros y diferenciar los datos no disponibles de los valores reales. También se debe tener cuidado al comparar cuentas o períodos con distinta cantidad de información, para evitar interpretaciones incorrectas.
+
+Además, se procuró que las tablas y los gráficos mantuvieran una estructura clara y legible, sin saturar las pantallas con demasiados indicadores al mismo tiempo.
+
 ## Prueba de los cinco segundos
-Pregunta 1: ¿Qué crees que hace esta pantalla?
 
-Respuesta: "Parece ser una plataforma para consultar o generar una constancia, pero en este momento no hay información disponible para mostrar."
+**Pregunta 1: ¿Qué crees que hace esta pantalla?**
 
-Pregunta 2: ¿Qué fue lo primero que viste?
+Respuesta: "Parece ser una plataforma para monitorear la actividad de los clientes e identificar cuáles podrían estar en riesgo de cancelar su servicio."
 
-Respuesta: "Lo primero que vi fue el mensaje 'No hay información disponible', porque está en el centro y tiene letras más grandes. Después vi el botón verde de 'Intentar nuevamente'."
+**Pregunta 2: ¿Qué fue lo primero que viste?**
 
-Pregunta 3: ¿Qué harías primero si fueras el usuario?
+Respuesta: "Primero vi los indicadores generales del dashboard y después los gráficos que muestran la actividad de las cuentas."
 
-Respuesta: "Presionaría el botón 'Intentar nuevamente' para ver si la información aparece. Si sigue sin funcionar, contactaría al área de soporte."
-
-* Eliminamos los rectángulos grises porque parecían ser espacios reservados para tarjetas o datos. También hicimos que el mensaje del estado vacío fuera el elemento principal de la pantalla, para que el usuario pueda entender inmediatamente qué sucedió y qué debe hacer a continuación. Por último, aumentamos ligeramente el tamaño del texto para facilitar su lectura.
+**Pregunta 3: ¿Qué harías primero si fueras
  
 ## Pendiente para manana
 Que pantallas faltan por convertir en wireframe: No falta nada en términos de convertiendo el sketch a un wireframe, sin embargo si tenemos que convertir también User Flow y Sitemap, entonces faltamos estos.
