@@ -129,29 +129,36 @@
 
 ## Wireframe de la pantalla principal
 
-El Dashboard Principal se diseñó como la primera pantalla de la plataforma LeadSales – Adoption & Churn Monitor. Se priorizó la visualización de indicadores generales, gráficos de actividad y una tabla con las cuentas que presentan mayores disminuciones de uso.
-
-La intención fue que el usuario pudiera comprender rápidamente el estado general de las cuentas y localizar aquellas que requieren una revisión más detallada. También se consideró una barra lateral para facilitar la navegación entre las cuatro pantallas principales y aplicar filtros sin saturar el área central.
+* **Fidelidad a la estructura del sketch:** Se conservó la distribución base de bloques apilados del sketch (`1440 × 1024 px`), manteniendo la barra lateral fija a la izquierda (`240 px`) para navegación y filtros globales, los 4 indicadores clave (KPIs) en la fila superior, las dos gráficas comparativas en el bloque intermedio y la tabla prioritaria de cuentas con disminución de actividad en la parte inferior.
+* **Qué cambió respecto al sketch y por qué:**
+  1. Se reemplazaron los rectángulos genéricos por componentes reales compatibles con Streamlit/Dash (`st.selectbox` para filtros, tarjetas `st.metric` con cifra principal y variación porcentual, gráficas con ejes etiquetados y `st.dataframe` con columnas definidas).
+  2. Se aplicó jerarquía tipográfica estricta en tres niveles (cifra grande del KPI, títulos de sección y texto de apoyo) con espaciado en múltiplos de 8 (`16 px` y `24 px`) y uso de color acento únicamente en elementos interactivos y alertas de variación negativa.
+  3. Se diseñó la pantalla **`Dashboard principal - vacío`** para evitar que la vista parezca rota cuando una combinación de filtros no arroja resultados, incorporando un mensaje claro y un botón de acción directa (`Restablecer filtros`).
 
 ## Problemas que aparecieron con contenido real
 
-Al incorporar información real en los bocetos, fue necesario considerar que algunos indicadores podían presentar valores faltantes o períodos incompletos. Por ejemplo, no todas las cuentas cuentan con información disponible sobre la conexión de sus canales, y los registros de agosto de 2026 no representan un mes completo.
+Al sustituir las etiquetas genéricas por datos y nombres realistas del contexto de **LeadSales**, se detectaron y resolvieron los siguientes problemas:
 
-Por esta razón, se decidió evitar mostrar valores faltantes como si fueran ceros y diferenciar los datos no disponibles de los valores reales. También se debe tener cuidado al comparar cuentas o períodos con distinta cantidad de información, para evitar interpretaciones incorrectas.
-
-Además, se procuró que las tablas y los gráficos mantuvieran una estructura clara y legible, sin saturar las pantallas con demasiados indicadores al mismo tiempo.
+1. **Valores faltantes vs. ceros reales (Calidad de datos – HO2):** En las banderas de conexión de canales (WhatsApp Web, WhatsApp API, Instagram, Facebook, LeadBot) existe un **30.97% de registros sin información**. Mostrarlos como `0` o `Desconectado` distorsionaba los porcentajes de adopción; se resolvió diferenciando explícitamente el estado *"Información no disponible"* y agregando notas de cobertura en las gráficas.
+2. **Períodos incompletos (Agosto 2026):** Los registros del mes en curso (agosto de 2026) no representan un mes cerrado, lo que generaba una caída artificial en la tendencia mensual. Se ajustó el selector de periodo por defecto al último mes cerrado (`Julio 2026`) y se etiquetó el mes parcial en el eje temporal.
+3. **Longitud de nombres de cuentas y métricas en tarjetas:** Algunos nombres comerciales largos rompían el ancho de columna en la tabla inferior y las variaciones con decimales saturaban las tarjetas KPI. Se limitó el ancho de la columna `Cuenta` con truncado elegante, se redondearon los porcentajes a un decimal y se trasladaron los filtros secundarios a la barra lateral para mantener la legibilidad a distancia.
 
 ## Prueba de los cinco segundos
 
-**Pregunta 1: ¿Qué crees que hace esta pantalla?**
+Se realizó la prueba silenciosa de 5 segundos con un integrante de otro equipo sin darle contexto previo sobre la pantalla:
 
-Respuesta: "Parece ser una plataforma para monitorear la actividad de los clientes e identificar cuáles podrían estar en riesgo de cancelar su servicio."
+* **Pregunta 1: ¿Qué crees que hace esta pantalla?**
+  * *Respuesta textual:* "Parece ser una plataforma para monitorear la actividad de los clientes e identificar cuáles podrían estar en riesgo de cancelar su servicio."
+* **Pregunta 2: ¿Qué fue lo primero que viste?**
+  * *Respuesta textual:* "Primero vi los indicadores generales del dashboard y después los gráficos que muestran la actividad de las cuentas."
+* **Pregunta 3: ¿Qué harías primero si fueras el usuario?**
+  * *Respuesta textual:* "Filtraría por el último mes o revisaría la lista de abajo para ver qué cuentas bajaron más su actividad y abrir su detalle."
+* **Ajustes realizados a partir de la prueba:** La jerarquía visual comunicó correctamente el propósito de monitoreo y el recorrido de lectura (KPIs $\rightarrow$ Gráficas $\rightarrow$ Tabla). Como ajuste menor, se dio mayor contraste al encabezado de la tabla inferior (*"Cuentas con mayor disminución de actividad"*) y se añadió una columna de acción (`Ver perfil`) para hacer evidente el paso hacia el **Perfil 360**.
 
-**Pregunta 2: ¿Qué fue lo primero que viste?**
+## Pendiente para mañana
 
-Respuesta: "Primero vi los indicadores generales del dashboard y después los gráficos que muestran la actividad de las cuentas."
-
-**Pregunta 3: ¿Qué harías primero si fueras
- 
-## Pendiente para manana
-Que pantallas faltan por convertir en wireframe: No falta nada en términos de convertiendo el sketch a un wireframe, sin embargo si tenemos que convertir también User Flow y Sitemap, entonces faltamos estos.
+* **Pantallas restantes por convertir a wireframe (del Mapa de Sitio):**
+  1. `Explorador de cuentas` (completar filas con datos creíbles y botones `Ver perfil`).
+  2. `Perfil 360 de la cuenta` (convertir los bloques de texto en tarjetas de métricas reales, indicadores de 3 estados para canales y gráfica de evolución histórica).
+  3. `Análisis de adopción` (incorporar ejes reales en las gráficas comparativas activas vs. canceladas y filas de ejemplo en la tabla de deterioro persistente).
+* **Preparación para prototipado:** Verificar que todas las pantallas utilicen el mismo componente de barra lateral (`Sidebar`) para conectar la navegación interactiva en la siguiente sesión.
