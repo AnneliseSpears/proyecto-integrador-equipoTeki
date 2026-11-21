@@ -162,3 +162,62 @@ Se realizó la prueba silenciosa de 5 segundos con un integrante de otro equipo 
   2. `Perfil 360 de la cuenta` (convertir los bloques de texto en tarjetas de métricas reales, indicadores de 3 estados para canales y gráfica de evolución histórica).
   3. `Análisis de adopción` (incorporar ejes reales en las gráficas comparativas activas vs. canceladas y filas de ejemplo en la tabla de deterioro persistente).
 * **Preparación para prototipado:** Verificar que todas las pantallas utilicen el mismo componente de barra lateral (`Sidebar`) para conectar la navegación interactiva en la siguiente sesión.
+
+## Prototipo
+
+* **Liga al prototipo navegable (Figma):
+* **Recorrido que cubre (basado en el User Flow principal):**
+  1. **Flujo principal:** Entrada por `Dashboard principal`luego consulta de KPIs y tabla de caída de actividad  luego clic en `Ver perfil` (ej. cuenta `ACC-1042`) luego navegación hacia `Perfil 360 de la cuenta` luego revisión de canales en 3 estados e historial luego regreso mediante `← Volver` o menú lateral.
+  2. **Camino alternativo:** Navegación desde el menú lateral hacia `Explorador de cuentas` luego búsqueda/filtrado de cuenta sospechosa luego apertura de `Perfil 360 de la cuenta`, además de acceso directo a `Análisis de adopción` y prueba de estado vacío (`Dashboard principal - vacío` con botón `Restablecer filtros` funcionando).
+  3. **Configuración técnica:** Todas las transiciones utilizan `On click` o `Navigate to` / `Back` con animación `Instant` (compatible con el comportamiento de Streamlit).
+* **Qué quedó fuera del prototipo (fuera de alcance):**
+  * Combinaciones dinámicas de múltiples filtros simultáneos mostrando subconjuntos distintos de datos (solo se prototipó el caso límite de estado vacío).
+  * Paginación individual de todas las páginas del explorador y edición de registros o notas de seguimiento.
+
+## Prueba del prototipo
+
+* **Tarea asignada al usuario:** *"Identifica una cuenta activa que haya tenido una caída fuerte de actividad este mes y revisa qué canales tiene conectados para decidir si requiere seguimiento de Customer Success."
+* **Probó:** Vale, Integrante del equipo 4x4 (prueba silenciosa de 8 minutos bajo protocolo *pensar en voz alta*).
+
+### Dónde dudó
+* Al abrir el `Perfil 360 de la cuenta`, tardó unos segundos en distinguir si el estado *"Información no disponible"* en Facebook significaba que el cliente había desconectado el canal o que el sistema no tenía registro.
+* Intentó hacer clic directamente sobre la fila completa de la cuenta `ACC-1042` en la tabla del `Dashboard principal` antes de notar el enlace `Ver perfil` en la última columna[cite: 17].
+* En `Análisis de adopción`, buscó un botón para regresar rápido al `Dashboard principal` dentro del área central antes de mirar la barra lateral.
+
+### Lo que dijo textual
+* *"Veo que Clínica Dental Norte bajó 62% en chats; le doy clic aquí en la fila... ah, tengo que darle en 'Ver perfil' a la derecha."
+* *"Aquí dice 'Información no disponible' en Facebook; supongo que es porque faltan datos en la base, pero no estoy seguro si lo usan o no."
+
+### Qué vamos a cambiar
+* **Filas clicables en tablas:** Conectar la fila completa de las tablas (`Dashboard principal` y `Explorador de cuentas`) además del enlace `Ver perfil` para que ambos lleven al `Perfil 360`.
+* **Tooltip / nota aclaratoria en canales:** Hacer más visible la nota explicativa bajo el bloque de canales en el `Perfil 360` (*"Dato sin registro en origen; no implica desconexión"*).
+* **Consistencia en navegación:** Mantener siempre resaltada la sección activa en el `Sidebar` y asegurar que el logo superior de `LeadSales` funcione como botón de regreso al `Dashboard principal` desde cualquier pantalla.
+
+## Sound bite
+
+* **Frase elegida (14 palabras):**
+  > **"Detecta qué clientes dejan de usar LeadSales hoy, antes de que cancelen mañana."**
+* **Otras cuatro alternativas consideradas y descartadas:**[cite: 17]
+  1. *"Toda la actividad y adopción de tus cuentas LeadSales en un solo lugar."* (14 palabras — descartada ya que pensabamos que por ser muy descriptiva y poco enfocada en la acción preventiva)
+  2. *"Menos horas cruzando archivos, más clientes retenidos a tiempo." (10 palabras la descartamos porque no menciona explícitamente la adopción del producto).
+  3. *"Convierte señales de baja adopción en retención proactiva para Customer Success."* (11 palabras la descartamos por sonar demasiado técnica y díficl de entender para los clientes).
+  4. *"Identifica cuentas en riesgo de cancelación con datos claros de uso real."* (13 palabras descartada porque la que elegimos comunica mejor la urgencia temporal)
+
+## Elevator pitch
+
+>
+> **¿Sabías que muchas cuentas cancelan su suscripción semanas después de dejar de usar funciones clave, sin que nadie lo note a tiempo?** 
+>
+> Hoy, el equipo de Customer Success en LeadSales tiene los datos de actividad, canales y soporte dispersos, dificultando detectar qué clientes están perdiendo adopción. 
+>
+> Nuestro monitor centraliza el uso real de cada cuenta, alerta caídas sostenidas de actividad y distingue entre canales desconectados y datos faltantes. 
+>
+> Diseñamos y validamos cada vista directamente con usuarios reales para priorizar decisiones accionables sin falsas alarmas. 
+>
+> **¿Nos das 15 minutos esta semana para validar juntos los umbrales de alerta con tu equipo?** 
+
+## Pendientes de diseño
+
+* **Definición formal del umbral de caída de actividad (KPI 4):** Confirmar con el socio formador el criterio matemático exacto (ej. caída $\ge 20\%$ durante 2 meses consecutivos) antes de codificar la métrica.
+* **Tratamiento de campos sin cobertura (`Onboarding` y `Sentimiento`):** Validar si se integrarán nuevas fuentes de datos en la fase de desarrollo o si permanecerán con etiqueta explícita de *"No disponible"* en la primera versión funcional.
+* **Estados de carga y error:** Diseñar los frames auxiliares (`Loading` y `Error de conexión`) para contemplarlos durante la construcción de la aplicación.
