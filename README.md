@@ -6,3 +6,6 @@ Nombre del proyecto: LeadSales Github Proyecto
 - docs/ux: entregables de UX
 - docs/ui: entregables de UI
 - app: código de la plataforma
+
+### Render
+https://prueba-render-mwxj.onrender.com/
