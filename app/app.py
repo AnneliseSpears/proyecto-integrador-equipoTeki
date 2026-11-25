@@ -2,18 +2,30 @@ from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import streamlit as st
- 
-st.set_page_config(page_title="Tablero de ventas", layout="wide")
- 
-RUTA = Path("proyecto-integrador-equipoTeki") / "datos" / "cancelaciones_limpias.parquet"
+#import time
 
-datos = pd.read_parquet(RUTA)
+# 1. Configuración de la página
+st.set_page_config(page_title="Tablero de cancelaciones", layout="wide")
+
+# Función para cargar datos
+@st.cache_data
+def cargar(ruta):
+
+    #time.sleep(2)  # Simula una consulta lenta
+
+    return pd.read_parquet(ruta)
+
+# Cargar datos
+RUTA = Path(__file__).parent.parent / "datos" / "cancelaciones_limpias.parquet"
+
+datos = cargar(RUTA)
+
 datos["fecha"] = pd.to_datetime(datos["fecha"])
- 
-st.write(datos.shape)
-st.write(datos.columns.tolist())
-st.dataframe(datos.head(20))
+datos["dia"] = datos["fecha"].dt.date
 
+#st.write(datos.shape)
+#st.write(datos.columns.tolist())
+#st.dataframe(datos.head(20))
 
 # --- Configuración de la página ---
 st.set_page_config(
@@ -21,238 +33,192 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- Datos inventados ---
-datos = pd.DataFrame({
-    "Cuenta": [
-        "Cuenta Alfa", "Cuenta Beta", "Cuenta Gamma",
-        "Cuenta Delta", "Cuenta Epsilon", "Cuenta Zeta",
-        "Cuenta Eta", "Cuenta Theta"
-    ],
-    "Segmento": [
-        "Enterprise", "PyME", "Enterprise", "PyME",
-        "Enterprise", "PyME", "Enterprise", "PyME"
-    ],
-    "Riesgo": [
-        "Alto", "Medio", "Alto", "Bajo",
-        "Medio", "Alto", "Bajo", "Medio"
-    ],
-    "Probabilidad de churn": [89, 65, 82, 18, 57, 91, 12, 48],
-    "Días sin actividad": [45, 20, 38, 5, 25, 52, 3, 18],
-    "Ingreso mensual": [
-        25000, 8000, 32000, 6000,
-        28000, 12000, 35000, 9000
-    ],
-    "KAM": [
-        "Ana", "Carlos", "Ana", "Luis",
-        "Carlos", "Luis", "Ana", "Carlos"
-    ],
-    "Estado": [
-        "En seguimiento", "Pendiente", "En seguimiento",
-        "Estable", "Pendiente", "En seguimiento",
-        "Estable", "Pendiente"
-    ]
-})
-
-# --- Barra lateral ---
+# 3. Filtros laterales
 with st.sidebar:
-    st.title("Customer Success")
-    st.caption("Panel de gestión de clientes")
 
-    st.divider()
+    st.header("Filtros")
 
-    st.subheader("Navegación")
-    seccion = st.radio(
-        "Seleccionar sección",
-        ["Dashboard", "Cuentas", "Seguimiento"]
+    grupos_plan = st.multiselect(
+        "Grupo de plan",
+        options=sorted(datos["grupo_plan"].dropna().unique()),
+        default=sorted(datos["grupo_plan"].dropna().unique()),
     )
 
-    st.divider()
-
-    st.subheader("Filtros")
-
-    segmento = st.selectbox(
-        "Segmento",
-        ["Todos"] + list(datos["Segmento"].unique())
+    motivos = st.multiselect(
+        "Motivo de cancelación",
+        options=sorted(datos["motivo_normalizado"].dropna().unique()),
+        default=sorted(datos["motivo_normalizado"].dropna().unique()),
     )
 
-    riesgo = st.selectbox(
-        "Nivel de riesgo",
-        ["Todos", "Alto", "Medio", "Bajo"]
+    inicio, fin = st.date_input(
+        "Periodo",
+        value=(datos["fecha"].min().date(), datos["fecha"].max().date()),
+        min_value=datos["fecha"].min().date(),
+        max_value=datos["fecha"].max().date(),
     )
 
-    kam = st.selectbox(
-        "Key Account Manager",
-        ["Todos"] + list(datos["KAM"].unique())
+# 4. Diccionario para renombrar motivos
+nombres_motivos = {
+    "H2_technical_issues": "Technical Issues",
+    "H4_lack_of_results": "Lack of Results",
+    "H5_high_pricing": "High Pricing",
+    "H6_plan_fit": "Plan Fit",
+    "H8_business_pause": "Business Pause",
+}
+
+# 5. Aplicar filtros
+filtrados = datos[
+    datos["grupo_plan"].isin(grupos_plan)
+    & datos["motivo_normalizado"].isin(motivos)
+    & datos["fecha"].between(
+        pd.to_datetime(inicio),
+        pd.to_datetime(fin)
     )
+]
 
-# --- Aplicar filtros ---
-filtrados = datos.copy()
+if filtrados.empty:
+    st.warning("No hay datos con esos filtros. Amplia la seleccion.")
+    st.stop()
 
-if segmento != "Todos":
-    filtrados = filtrados[filtrados["Segmento"] == segmento]
+# Descargar datos filtrados como CSV
 
-if riesgo != "Todos":
-    filtrados = filtrados[filtrados["Riesgo"] == riesgo]
+csv = filtrados.to_csv(index=False).encode("utf-8")
 
-if kam != "Todos":
-    filtrados = filtrados[filtrados["KAM"] == kam]
-
-# --- Encabezado principal ---
-st.title("Dashboard de Riesgo de Churn")
-st.caption("Monitoreo de cuentas y seguimiento de Customer Success")
-
-st.divider()
-
-# --- Indicadores principales ---
-total_cuentas = len(filtrados)
-
-cuentas_alto = len(
-    filtrados[filtrados["Riesgo"] == "Alto"]
+st.download_button(
+    label="Descargar datos filtrados (CSV)",
+    data=csv,
+    file_name="cancelaciones_filtradas.csv",
+    mime="text/csv",
 )
 
-probabilidad_promedio = (
-    filtrados["Probabilidad de churn"].mean()
-    if total_cuentas > 0 else 0
+# 6. Calcular métricas
+cancelaciones = len(filtrados)
+
+cuentas = filtrados["account_id"].nunique()
+
+motivo_principal = (
+    nombres_motivos.get(
+        filtrados["motivo_normalizado"].mode()[0],
+        filtrados["motivo_normalizado"].mode()[0]
+    )
+    if not filtrados.empty
+    else "Sin datos"
 )
 
-c1, c2, c3 = st.columns(3)
+dias = filtrados["fecha"].nunique()
 
-c1.metric(
-    "Cuentas analizadas",
-    total_cuentas
-)
+# 7. Mostrar métricas
+st.title("Tablero de cancelaciones")
 
-c2.metric(
-    "Cuentas en riesgo alto",
-    cuentas_alto
-)
+c1, c2, c3, c4 = st.columns(4)
 
-c3.metric(
-    "Probabilidad promedio de churn",
-    f"{probabilidad_promedio:.1f}%"
-)
+c1.metric("Cancelaciones", f"{cancelaciones:,}")
 
-st.divider()
+c2.metric("Cuentas afectadas", f"{cuentas:,}")
 
-# --- Gráfica de distribución de riesgo ---
-st.subheader("Distribución de cuentas por nivel de riesgo")
+c3.metric("Motivo principal", motivo_principal)
 
-orden = ["Alto", "Medio", "Bajo"]
+c4.metric("Días con registros", f"{dias}")
 
-conteo_riesgo = (
-    filtrados["Riesgo"]
-    .value_counts()
-    .reindex(orden, fill_value=0)
-    .reset_index()
-)
+# Pestañas del dashboard
 
-conteo_riesgo.columns = ["Nivel de riesgo", "Cuentas"]
-
-figura = px.bar(
-    conteo_riesgo,
-    x="Nivel de riesgo",
-    y="Cuentas",
-    text="Cuentas",
-    title="Cuentas según nivel de riesgo"
-)
-
-figura.update_layout(
-    plot_bgcolor="white",
-    paper_bgcolor="white",
-    showlegend=False
-)
-
-st.plotly_chart(figura, use_container_width=True)
-
-st.divider()
-
-# --- Tabla principal ---
-st.subheader("Cuentas de clientes")
-
-st.caption("Listado de cuentas según los filtros seleccionados.")
-
-st.dataframe(
-    filtrados,
-    use_container_width=True,
-    hide_index=True
-)
-
-st.divider()
-
-# --- Secciones de detalle ---
-tab1, tab2, tab3 = st.tabs([
-    "Detalle de cuenta",
-    "Seguimiento KAM",
-    "Datos"
+tab1, tab2 = st.tabs([
+    "Gráficas",
+    "Tabla cruzada"
 ])
 
 with tab1:
-    st.subheader("Información de una cuenta")
 
-    if not filtrados.empty:
-        cuenta_seleccionada = st.selectbox(
-            "Seleccionar cuenta",
-            filtrados["Cuenta"].tolist()
-        )
+    st.subheader("Análisis de cancelaciones")
 
-        detalle = filtrados[
-            filtrados["Cuenta"] == cuenta_seleccionada
-        ].iloc[0]
+    # Aquí van tus gráficas actuales
 
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.write("**Cuenta:**", detalle["Cuenta"])
-            st.write("**Segmento:**", detalle["Segmento"])
-            st.write("**Nivel de riesgo:**", detalle["Riesgo"])
-            st.write(
-                "**Probabilidad de churn:**",
-                f'{detalle["Probabilidad de churn"]}%'
-            )
-
-        with col2:
-            st.write(
-                "**Días sin actividad:**",
-                detalle["Días sin actividad"]
-            )
-            st.write(
-                "**Ingreso mensual:**",
-                f'${detalle["Ingreso mensual"]:,}'
-            )
-            st.write("**KAM:**", detalle["KAM"])
-            st.write("**Estado:**", detalle["Estado"])
-    else:
-        st.info("No hay cuentas disponibles con los filtros seleccionados.")
 
 with tab2:
-    st.subheader("Seguimiento de Key Account Managers")
 
-    st.dataframe(
-        filtrados[[
-            "Cuenta", "KAM", "Riesgo", "Estado"
-        ]],
-        use_container_width=True,
-        hide_index=True
+    st.subheader("Cancelaciones por grupo de plan y motivo")
+
+    tabla_cruzada = filtrados.pivot_table(
+        index="grupo_plan",
+        columns="motivo_normalizado",
+        values="account_id",
+        aggfunc="count",
+        fill_value=0
     )
 
-with tab3:
-    st.subheader("Datos utilizados")
-
-    st.write(
-        "Esta tabla contiene datos de ejemplo creados "
-        "manualmente para representar las cuentas del proyecto."
+    # Renombrar columnas para facilitar la lectura
+    tabla_cruzada = tabla_cruzada.rename(
+        columns=nombres_motivos
     )
 
     st.dataframe(
-        filtrados,
-        use_container_width=True,
-        hide_index=True
+        tabla_cruzada,
+        use_container_width=True
     )
 
-# --- Pie de página ---
-st.divider()
+# Cancelaciones por día
+por_dia = filtrados.groupby("dia", as_index=False).size()
+por_dia = por_dia.rename(columns={"size": "cancelaciones"})
 
-st.caption(
-    "Proyecto de análisis de Customer Churn | "
-    "Datos simulados para demostración"
+st.plotly_chart(
+    px.line(
+        por_dia,
+        x="dia",
+        y="cancelaciones",
+        title="Cancelaciones por día",
+        labels={
+            "dia": "Fecha",
+            "cancelaciones": "Número de cancelaciones"
+        }
+    ),
+    use_container_width=True
+)
+
+# 2. Gráficas por motivo y grupo de plan
+izq, der = st.columns(2)
+
+# Cancelaciones por motivo
+por_cat = (
+    filtrados.groupby("motivo_normalizado")
+    .size()
+    .reset_index(name="cancelaciones")
+)
+
+por_cat["motivo"] = por_cat["motivo_normalizado"].map(
+    nombres_motivos
+).fillna(por_cat["motivo_normalizado"])
+
+izq.plotly_chart(
+    px.bar(
+        por_cat,
+        x="motivo",
+        y="cancelaciones",
+        title="Cancelaciones por motivo",
+        labels={
+            "motivo": "Motivo de cancelación",
+            "cancelaciones": "Número de cancelaciones"
+        }
+    ),
+    use_container_width=True
+)
+
+# Cancelaciones por grupo de plan
+por_suc = (
+    filtrados.groupby("grupo_plan")
+    .size()
+    .reset_index(name="cancelaciones")
+)
+
+der.plotly_chart(
+    px.bar(
+        por_suc,
+        x="grupo_plan",
+        y="cancelaciones",
+        title="Cancelaciones por grupo de plan",
+        labels={
+            "grupo_plan": "Grupo de plan",
+            "cancelaciones": "Número de cancelaciones"
+        }
+    ),
+    use_container_width=True
 )

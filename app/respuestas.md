@@ -20,3 +20,9 @@ Arlet: Se tendría que guardar en una variable especial de Streamlit llamada st.
 Miguel: El valor debería almacenarse en st.session_state, ya que funciona como un espacio de almacenamiento que mantiene los datos durante las diferentes interacciones del usuario.
 
 Francesco: En st.session_state, porque permite guardar información sin que se reinicie cada vez que Streamlit ejecuta el código.
+
+# Medir el caché
+
+Sin @st.cache_data: 1er carga --> ~3 segundos, Al mover el filtro --> 2 segundos
+
+Con @st.cache_data: 1er carga --> 1 segundo, Al mover el filtro --> casi inmediata
