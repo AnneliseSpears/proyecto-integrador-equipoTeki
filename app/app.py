@@ -1,6 +1,19 @@
-import streamlit as st
+from pathlib import Path
 import pandas as pd
 import plotly.express as px
+import streamlit as st
+ 
+st.set_page_config(page_title="Tablero de ventas", layout="wide")
+ 
+RUTA = Path("proyecto-integrador-equipoTeki") / "datos" / "cancelaciones_limpias.parquet"
+
+datos = pd.read_parquet(RUTA)
+datos["fecha"] = pd.to_datetime(datos["fecha"])
+ 
+st.write(datos.shape)
+st.write(datos.columns.tolist())
+st.dataframe(datos.head(20))
+
 
 # --- Configuración de la página ---
 st.set_page_config(
