@@ -123,7 +123,7 @@ c4.metric("Días con registros", f"{dias}")
 # Pestañas del dashboard
 
 tab1, tab2 = st.tabs([
-    "Gráficas",
+    "Cancelaciones por día",
     "Tabla cruzada"
 ])
 
