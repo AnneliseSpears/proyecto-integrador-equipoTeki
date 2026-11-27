@@ -239,9 +239,10 @@ else:
     c4.metric(
         "Riesgo con caída",
         f"{veces:.1f}× más" if pd.notna(veces) else "Sin dato",
-        delta=f"{churn_con:.0f}% con caída vs {churn_sin:.0f}% sin caída" if pd.notna(veces) else None,
-        delta_color="off",
+        help="Cuántas veces más cancelan las cuentas con caída que las cuentas sin caída",
     )
+    if pd.notna(veces):
+        c4.caption(f"{churn_con:.0f}% de churn con caída vs {churn_sin:.0f}% sin caída")
 
 st.divider()
 
@@ -273,7 +274,7 @@ else:
         color_discrete_map={"Con caída ≥50%": COLOR_CON, "Sin caída": COLOR_SIN},
     )
     fig_corte.add_hline(y=churn_total, line_dash="dot", annotation_text="Promedio")
-    izq.plotly_chart(fig_corte, use_container_width=True)
+    izq.plotly_chart(fig_corte, width="stretch")
 
     por_nivel = con_desenlace.groupby("nivel_adopcion", as_index=False).agg(
         churn=("churn_60d", "mean"), cuentas=("account_id", "size")
@@ -294,7 +295,7 @@ else:
             hover_data={"cuentas": True},
             color_discrete_sequence=[COLOR_SIN],
         ),
-        use_container_width=True,
+        width="stretch",
     )
 
 # --- Bloque inferior: detalle en pestañas ---
@@ -334,7 +335,7 @@ with tab1:
     st.caption(
         f"{len(tabla):,} cuentas cumplen la señal. Son las primeras que Customer Success debería revisar."
     )
-    st.dataframe(tabla, use_container_width=True, hide_index=True)
+    st.dataframe(tabla, width="stretch", hide_index=True)
     st.download_button(
         "Descargar lista (CSV)",
         data=tabla.to_csv(index=False).encode("utf-8"),
@@ -380,7 +381,7 @@ with tab2:
         if pd.notna(referencia):
             fig_tray.add_hline(y=referencia, line_dash="dot", annotation_text="Cuentas que se quedan")
         fig_tray.update_yaxes(range=[0, 105])
-        st.plotly_chart(fig_tray, use_container_width=True)
+        st.plotly_chart(fig_tray, width="stretch")
         st.caption(
             f"{bajas['account_id'].nunique():,} cuentas canceladas. La línea punteada es la mediana de "
             "las cuentas que no cancelaron en el mismo periodo."
@@ -415,7 +416,7 @@ with tab3:
                 labels={"size": "Cuentas", "motivo": ""},
                 color_discrete_map={"Con caída ≥50%": COLOR_CON, "Sin caída": COLOR_SIN, "No medible": "#D5D8DC"},
             ),
-            use_container_width=True,
+            width="stretch",
         )
         st.caption(
             f"{len(canceladas):,} cuentas canceladas respondieron la encuesta de salida. "
@@ -425,7 +426,7 @@ with tab3:
         tabla_cruzada = canceladas.pivot_table(
             index="motivo", columns="plan", values="account_id", aggfunc="count", fill_value=0
         )
-        st.dataframe(tabla_cruzada, use_container_width=True)
+        st.dataframe(tabla_cruzada, width="stretch")
 
 with tab4:
     st.markdown(
