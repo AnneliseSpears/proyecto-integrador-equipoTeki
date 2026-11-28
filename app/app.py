@@ -84,11 +84,128 @@ def etiqueta_mes(fecha):
 
 
 # --- Carga y preparación de datos (se guarda en caché) ---
+# Señales de la Evidencia 4 que se comparan en el tablero: (tipo, nombre, columna)
+SENALES = [
+    ("Uso", "Caída ≥50% de chats", "caida_50"),
+    ("Uso", "Uso bajo 2 meses seguidos (<50% de días)", "uso_bajo_2m"),
+    ("Canal", "WhatsApp Web desconectado al cierre", "wa_desconectado"),
+    ("Contexto", "En mora al cierre", "mora"),
+    ("Contexto", "Abrió tickets de soporte (3 meses)", "tickets_3m"),
+]
+
+
+def estado_whatsapp(eventos, cortes):
+    """Estado de WhatsApp Web al cierre de cada mes, con las reglas de la Evidencia 4:
+    - solo cuentan los eventos hasta el día del corte;
+    - una desconexión de menos de 24 h al corte queda como desconocida (puede ser un parpadeo);
+    - si en el mismo instante hay conecta y desconecta, el estado es desconocido;
+    - sin eventos en el periodo = la cuenta no usa WhatsApp Web (por ejemplo, usa la API).
+    Solo se usa WhatsApp Web: Instagram, Facebook y la API tienen desconexiones faltantes y borrados masivos."""
+    wa = eventos[eventos["canal"] == "whatsapp_web"].copy()
+    wa["fecha_hora"] = pd.to_datetime(wa["fecha_hora"], utc=True).dt.tz_localize(None).astype("datetime64[ns]")
+    wa["valor"] = wa["evento"].map({"conecta": 1, "conectado_al_inicio": 1, "desconecta": 0})
+    wa = wa.groupby(["account_id", "fecha_hora"], as_index=False)["valor"].agg(["min", "max"])
+    wa["valor"] = np.where(wa["min"] == wa["max"], wa["min"], -1)
+    wa = wa.sort_values("fecha_hora")[["account_id", "fecha_hora", "valor"]]
+
+    consulta = cortes.drop_duplicates().copy()
+    consulta["limite"] = (consulta["corte"] + pd.Timedelta(days=1)).astype("datetime64[ns]")
+    consulta = consulta.sort_values("limite")
+    ultimo = pd.merge_asof(consulta, wa, left_on="limite", right_on="fecha_hora", by="account_id")
+    reciente = (ultimo["limite"] - ultimo["fecha_hora"]) < pd.Timedelta(hours=24)
+    ultimo["estado_wa"] = np.select(
+        [ultimo["valor"].isna(), ultimo["valor"] == -1, ultimo["valor"] == 1, reciente],
+        ["Sin WhatsApp Web", "Desconocido", "Conectado", "Desconocido"],
+        default="Desconectado",
+    )
+    return ultimo[["account_id", "corte", "estado_wa"]]
+
+
+def comparar_senales(df):
+    """Churn a 60 días de los casos con y sin cada señal (solo cortes con desenlace)."""
+    con_desenlace = df[df["churn_60d"].notna()]
+    filas = []
+    for tipo, nombre, columna in SENALES:
+        evaluables = con_desenlace.dropna(subset=[columna])
+        con = evaluables.loc[evaluables[columna] == 1, "churn_60d"]
+        sin = evaluables.loc[evaluables[columna] == 0, "churn_60d"]
+        if con.empty or sin.empty:
+            continue
+        filas.append({
+            "Tipo": tipo,
+            "Señal": nombre,
+            "Casos con la señal (%)": round(len(con) / len(evaluables) * 100, 1),
+            "Churn con la señal (%)": round(con.mean() * 100, 1),
+            "Churn sin la señal (%)": round(sin.mean() * 100, 1),
+            "Veces más": round(con.mean() / sin.mean(), 1) if sin.mean() > 0 else np.nan,
+        })
+    return pd.DataFrame(filas)
+
+
+# Nombres cortos para las gráficas (la tabla conserva los nombres completos)
+NOMBRE_CORTO = {
+    "Caída ≥50% de chats": "Caída ≥50% de chats",
+    "Uso bajo 2 meses seguidos (<50% de días)": "Uso bajo 2 meses",
+    "WhatsApp Web desconectado al cierre": "WhatsApp Web desconectado",
+    "En mora al cierre": "En mora",
+    "Abrió tickets de soporte (3 meses)": "Tickets de soporte",
+}
+NIVEL_CORTO = {
+    "Baja (<25% de días)": "Baja<br>(<25% de días)",
+    "Media (25–75%)": "Media<br>(25–75%)",
+    "Alta (>75%)": "Alta<br>(>75%)",
+}
+
+
+def figura_senales(tabla):
+    datos = tabla.melt(
+        id_vars=["Tipo", "Señal"],
+        value_vars=["Churn con la señal (%)", "Churn sin la señal (%)"],
+        var_name="Grupo", value_name="churn",
+    )
+    datos["Grupo"] = datos["Grupo"].map({"Churn con la señal (%)": "Con la señal", "Churn sin la señal (%)": "Sin la señal"})
+    datos["Señal"] = "<b>" + datos["Tipo"] + "</b><br>" + datos["Señal"].map(NOMBRE_CORTO)
+    orden = ("<b>" + tabla["Tipo"] + "</b><br>" + tabla["Señal"].map(NOMBRE_CORTO)).tolist()
+    fig = px.bar(
+        datos, x="churn", y="Señal", color="Grupo", orientation="h", barmode="group", text_auto=".1f",
+        title="Churn a 60 días con y sin cada señal",
+        labels={"churn": "Churn a 60 días (%)", "Señal": ""},
+        category_orders={"Señal": orden, "Grupo": ["Con la señal", "Sin la señal"]},
+        color_discrete_map={"Con la señal": COLOR_CON, "Sin la señal": COLOR_SIN},
+    )
+    fig.update_layout(legend=dict(title_text="", orientation="h", yanchor="bottom", y=1.0, x=0))
+    fig.update_yaxes(automargin=True)
+    return fig
+
+
+def figura_uso_canal(df):
+    datos = df[df["churn_60d"].notna() & df["estado_wa"].isin(["Conectado", "Desconectado"])]
+    if datos.empty:
+        return None
+    datos = datos.groupby(["nivel_adopcion", "estado_wa"], as_index=False).agg(
+        churn=("churn_60d", "mean"), casos=("account_id", "size")
+    )
+    datos["churn_%"] = datos["churn"] * 100
+    datos["nivel_adopcion"] = datos["nivel_adopcion"].map(NIVEL_CORTO)
+    fig = px.bar(
+        datos, x="nivel_adopcion", y="churn_%", color="estado_wa", barmode="group", text_auto=".0f",
+        title="¿El canal suma algo al uso?",
+        labels={"churn_%": "Churn a 60 días (%)", "nivel_adopcion": "Días activos en el mes", "estado_wa": "WhatsApp Web"},
+        category_orders={"nivel_adopcion": list(NIVEL_CORTO.values()), "estado_wa": ["Desconectado", "Conectado"]},
+        hover_data={"casos": True},
+        color_discrete_map={"Desconectado": COLOR_CON, "Conectado": COLOR_SIN},
+    )
+    fig.update_layout(legend=dict(orientation="h", yanchor="bottom", y=1.0, x=0))
+    fig.update_xaxes(tickangle=0, automargin=True)
+    return fig
+
+
 @st.cache_data
 def cargar(carpeta):
     panel = pd.read_csv(carpeta / "panel_mensual.csv", parse_dates=["mes"])
     perfil = pd.read_csv(carpeta / "perfil_cuentas.csv", parse_dates=["fecha_inicio", "fecha_baja"])
     cancelaciones = pd.read_csv(carpeta / "cancelaciones.csv", parse_dates=["fecha"])
+    eventos = pd.read_csv(carpeta / "historial_canales_eventos.csv", parse_dates=["fecha_hora"])
 
     panel = panel.sort_values(["account_id", "mes"]).reset_index(drop=True)
     panel["industria"] = panel["industria"].replace(INDUSTRIAS).fillna("Otra / no declarada")
@@ -122,6 +239,18 @@ def cargar(carpeta):
         labels=["Baja (<25% de días)", "Media (25–75%)", "Alta (>75%)"],
     ).astype(str)
 
+    # Otras señales de la Evidencia 4: uso bajo sostenido, mora y soporte
+    por_cuenta = panel.groupby("account_id")
+    dias_previo = por_cuenta["prop_dias_activos"].shift(1)
+    panel["uso_bajo_2m"] = np.where(
+        panel["ventana_completa"], ((panel["prop_dias_activos"] < 0.5) & (dias_previo < 0.5)).astype(float), np.nan
+    )
+    panel["mora"] = panel["en_morosidad"].astype(float)
+    tickets_3m = (
+        panel["n_tickets_soporte"] + por_cuenta["n_tickets_soporte"].shift(1) + por_cuenta["n_tickets_soporte"].shift(2)
+    )
+    panel["tickets_3m"] = np.where(panel["ventana_completa"], (tickets_3m > 0).astype(float), np.nan)
+
     # Base del tablero: cuentas activas al cierre de cada mes (el "corte")
     base = panel[
         (panel["estado_en_mes"] == "activa") & panel["ventana_completa"] & (panel["mes"] >= PRIMER_CORTE)
@@ -134,6 +263,10 @@ def cargar(carpeta):
     fin_ventana = base["corte"] + pd.Timedelta(days=HORIZONTE_DIAS)
     cancelo = (base["fecha_baja"] > base["corte"]) & (base["fecha_baja"] <= fin_ventana)
     base["churn_60d"] = np.where(fin_ventana <= CORTE_DATOS, cancelo.astype(float), np.nan)
+
+    # Canal: estado de WhatsApp Web al cierre de cada mes
+    base = base.merge(estado_whatsapp(eventos, base[["account_id", "corte"]]), on=["account_id", "corte"], how="left")
+    base["wa_desconectado"] = base["estado_wa"].map({"Desconectado": 1.0, "Conectado": 0.0})
 
     # Actividad en los meses previos a la baja (para ver si el uso cae antes de cancelar)
     con_baja = panel[panel["fecha_baja"].notna() & panel["estado_en_mes"].isin(["activa", "baja_este_mes"])].copy()
@@ -197,8 +330,9 @@ filtrados = base[
 # --- Encabezado ---
 st.title("Monitor de adopción y riesgo de churn")
 st.markdown(
-    "**¿La baja adopción anticipa la cancelación?** Comparamos cuántas cuentas cancelan en los "
-    "60 días siguientes al cierre de cada mes, según cómo venían usando LeadSales."
+    "**¿La baja adopción de funcionalidades y canales anticipa la cancelación?** Comparamos cuántas cuentas "
+    "cancelan en los 60 días siguientes al cierre de cada mes, según cómo venían usando LeadSales y si "
+    "tenían su canal conectado."
 )
 st.caption(f"Periodo: {etiqueta_mes(inicio)} a {etiqueta_mes(fin)} · Datos al 31-oct-2026")
 
@@ -297,6 +431,36 @@ else:
         ),
         width="stretch",
     )
+
+# --- Comparación de señales: ¿qué tipo de baja adopción anticipa la cancelación? ---
+st.subheader("¿Qué señal anticipa mejor la cancelación?")
+st.caption(
+    "Comparamos señales de **uso** de la plataforma, del **canal** (WhatsApp Web) y de **contexto** (mora y soporte). "
+    "Cada par de barras compara el churn a 60 días de las cuentas que tenían la señal al cierre del mes "
+    "contra las que no la tenían."
+)
+
+if con_desenlace.empty:
+    st.info("Sin desenlace en el periodo elegido.")
+else:
+    tabla_senales = comparar_senales(filtrados)
+    if tabla_senales.empty:
+        st.info("No hay suficientes cuentas con esos filtros para comparar las señales.")
+    else:
+        col_senales, col_canal = st.columns(2)
+        col_senales.plotly_chart(figura_senales(tabla_senales), width="stretch")
+        fig_canal = figura_uso_canal(filtrados)
+        if fig_canal is None:
+            col_canal.info("No hay cuentas con WhatsApp Web registrado con esos filtros.")
+        else:
+            col_canal.plotly_chart(fig_canal, width="stretch")
+        st.dataframe(tabla_senales, width="stretch", hide_index=True)
+        st.caption(
+            "Casos = cuenta y mes de corte. El canal solo considera cuentas con WhatsApp Web conectado o "
+            "desconectado al cierre; las que no usan WhatsApp Web (por ejemplo, las de API) quedan fuera."
+        )
+
+st.divider()
 
 # --- Bloque inferior: detalle en pestañas ---
 tab1, tab2, tab3, tab4 = st.tabs(
@@ -434,19 +598,26 @@ with tab4:
 **Qué responde este tablero.** Si la baja adopción anticipa la cancelación. Para cada cuenta activa al
 cierre de un mes revisamos cómo venía usando LeadSales y si canceló en los **60 días siguientes**.
 
-**Las dos señales de adopción**
+**Las señales de adopción**
 - **Caída ≥50% de chats:** los chats del mes son la mitad o menos del promedio de los dos meses
   anteriores. Si ese promedio es 0 o falta un mes, la caída no se puede medir (no se toma como 0).
 - **Días activos:** proporción de días del mes en los que la cuenta usó la plataforma.
+- **WhatsApp Web desconectado:** el canal estaba desconectado (por más de 24 h) al cierre del mes.
 
-**Qué encontramos (Evidencia 4).** Las cuentas con caída cancelan cerca de 3 veces más que las demás,
-y la frecuencia de uso pesa más que el volumen de chats. La conexión de canales (por ejemplo, WhatsApp
-Web) no anticipó la baja más allá de lo que ya dice el uso, y sus datos tienen problemas de calidad,
-por eso no se grafica aquí.
+**Qué encontramos.** La baja adopción **sí anticipa la cancelación**, tanto en el **uso** como en el
+**canal**. Las cuentas con caída de chats ≥50% o con pocos días activos cancelan unas 3 veces más, y lo
+mismo pasa con las que tienen WhatsApp Web desconectado al cierre del mes. El patrón se repite en los
+4 meses con desenlace y se mantiene incluso entre cuentas con uso alto y estable. En el modelo de la
+Evidencia 4 (que medía la conexión de otra forma, como % del tiempo conectado en 3 meses), el canal no
+mejoró la predicción de forma consistente una vez que ya se conocía el uso. Por eso lo usamos como señal
+complementaria y de diagnóstico (¿la caída es un problema técnico?). La **mora** duplica el riesgo, y
+abrir **tickets de soporte** se asocia con *menos* churn: quien pide ayuda sigue comprometido.
 
 **Limitaciones**
 - Es una **asociación**, no una causa: una caída no significa que la cuenta se vaya a ir.
 - Septiembre y octubre todavía no tienen desenlace a 60 días.
+- Solo se usa WhatsApp Web: Instagram, Facebook y la API tienen desconexiones faltantes y borrados masivos.
+  En julio hubo una migración técnica que generó desconexiones que no son decisión del cliente.
 - Solo se incluyen cuentas con al menos 3 meses seguidos de historial; las cuentas nuevas (onboarding)
   necesitan otro seguimiento.
 """

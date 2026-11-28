@@ -34,7 +34,9 @@ Francesco: En st.session_state, porque permite guardar información sin que se r
 
 Con la Evidencia 4 obtuvimos los datos v3 de LeadSales (panel mensual de uso, perfil de cuentas y cancelaciones, corte 31-oct-2026). Por eso, desde este laboratorio, el tablero deja de mostrar solo las cancelaciones y se enfoca en nuestra pregunta directiva: **¿cómo identificar si la baja adopción de funcionalidades y canales anticipa la cancelación?**
 
-- La señal principal es la **caída de 50% o más en los chats** del mes contra los dos meses anteriores, junto con la **proporción de días activos**.
+- Medimos la adopción de **funcionalidades** con el uso: **caída de 50% o más en los chats** contra los dos meses anteriores, **proporción de días activos** y **uso bajo dos meses seguidos**.
+- Medimos la adopción de **canales** con el estado de **WhatsApp Web** al cierre del mes, con las reglas de la Evidencia 4 (las desconexiones de menos de 24 h no cuentan).
+- Un bloque compara todas las señales lado a lado (uso, canal, mora y soporte) para responder qué tipo de baja adopción anticipa la cancelación.
 - Para cada cuenta activa al cierre de un mes revisamos si canceló en los **60 días siguientes**.
 - Las cancelaciones se quedan como la pestaña "¿Por qué se van?": la caída de uso dice cuándo actuar y el motivo dice qué ofrecer.
 
@@ -79,11 +81,26 @@ Simulamos una fuente lenta con `time.sleep(2)` dentro de la función que carga l
 
 | | Primera carga | Al mover el filtro |
 |---|---|---|
-| Sin `@st.cache_data` | 3 s | 5 s |
-| Con `@st.cache_data` | 5 s | 4.6 s en promedio (6, 7, 4, 2 y 4 s en 5 intentos) |
+| Sin `@st.cache_data` | 5 s | 5 s |
+| Con `@st.cache_data` | 3 s | 4.6 s en promedio (6, 7, 4, 2 y 4 s en 5 intentos) |
 
 **Conclusión:** sin caché, cada vez que movemos un filtro Streamlit vuelve a correr el script completo y vuelve a leer los tres archivos, con todo y la espera de la consulta lenta. Con `@st.cache_data`, la primera carga sigue tardando porque es la que llena el caché, pero después los datos ya no se vuelven a leer y lo que queda es solo recalcular y dibujar el tablero.
 
-**Nota sobre nuestra medición:** la diferencia que medimos fue menor que los 2 segundos de la espera simulada. Lo atribuimos a dos cosas: medimos a mano con cronómetro, lo que tiene un margen de error de 1 a 2 segundos, y nuestro tablero tarda varios segundos en dibujar sus gráficas y tablas en la laptop, con o sin caché. Aun así, dejamos el `@st.cache_data`, porque en Render, con datos reales y varias personas conectadas, leer los archivos en cada interacción sí haría lenta la aplicación.
+**Nota sobre nuestra medición:** al mover los filtros, la diferencia que medimos fue menor que los 2 segundos de la espera simulada. Lo atribuimos a dos cosas: medimos a mano con cronómetro, lo que tiene un margen de error de 1 a 2 segundos, y nuestro tablero tarda varios segundos en dibujar sus gráficas y tablas en la laptop, con o sin caché. Aun así, dejamos el `@st.cache_data`, porque en Render, con datos reales y varias personas conectadas, leer los archivos en cada interacción sí haría lenta la aplicación.
 
 Al terminar la medición quitamos el `time.sleep(2)` y el `import time`, y dejamos el `@st.cache_data`.
+
+---
+
+# Laboratorio 11 · Dash, el layout como árbol de componentes
+
+Construimos el mismo tablero de Streamlit en `dash/app.py`, con los mismos datos y los mismos cálculos, incluida la comparación de señales de uso, canal y contexto (los indicadores dan exactamente lo mismo: 2,059 cuentas activas, 11.9% con caída, 10.6% de churn y 3.3× más riesgo con caída). Los filtros ya tienen su `id`, pero todavía no hacen nada: se conectan con callbacks en el Laboratorio 12.
+
+## Bitácora de comparación
+
+| Pregunta | Nuestra respuesta |
+|---|---|
+| ¿Qué les resultó más fácil en Dash que en Streamlit? | Acomodar los bloques donde los queríamos. Con `display: flex` y los diccionarios de estilo controlamos el ancho de cada tarjeta, la barra lateral y la separación entre bloques. También fue práctico escribir funciones como `tarjeta()` o `grafica()` que devuelven un pedazo del árbol y reutilizarlas. |
+| ¿Qué les resultó más difícil o más lento? | Escribir el layout: hay que cuidar los corchetes y paréntesis del árbol, y cada estilo se define a mano en camelCase. En Streamlit con una línea (`st.metric`, `st.columns`) ya teníamos el resultado. Además, en Dash los filtros no hacen nada hasta escribir los callbacks, mientras que en Streamlit funcionan desde el inicio. |
+| ¿Hay algo de su wireframe original que en Streamlit no pudieron construir y en Dash sí? | Sí. La barra lateral con el menú de pantallas (Dashboard, Explorador, Perfil 360, Análisis) y el ancho fijo de 240 px; la tarjeta de riesgo marcada en rojo con ícono de alerta y del doble de ancho; y la tabla con encabezado oscuro como en Figma. La columna "Ver perfil" clicable todavía no, porque necesita callbacks. |
+| Con lo visto hasta hoy, ¿con cuál se inclinan? ¿Por qué? | Por ahora nos inclinamos por Dash, porque se parece más a nuestro wireframe y nos deja agregar las pantallas del Explorador y el Perfil 360. Pero Streamlit fue mucho más rápido de construir. La decisión final depende de qué tan complicados sean los callbacks en el Laboratorio 12. |
