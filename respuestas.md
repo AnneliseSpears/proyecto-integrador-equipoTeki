@@ -32,7 +32,7 @@ Francesco: En st.session_state, porque permite guardar información sin que se r
 
 ## Cambio de enfoque del tablero
 
-Con la Evidencia 4 obtuvimos los datos v3 de LeadSales (panel mensual de uso, perfil de cuentas y cancelaciones, corte 31-oct-2026). Por eso, desde este laboratorio, el tablero deja de mostrar solo las cancelaciones y se enfoca en nuestra pregunta directiva: **¿cómo identificar si la baja adopción de funcionalidades y canales anticipa la cancelación?**
+Con las ultimas entregas tuvimos más infomación y pudimos enfocarnos más en la pregunta y problema que tenemos que resolver para LeadSales, es por eso que apartir del Lab 9 nos enfocamos en los canales y no tan general como la anticipación del churn, usamos las variables:  panel mensual de uso, perfil de cuentas y cancelaciones, corte 31-oct-2026). Por eso, desde este laboratorio, el tablero deja de mostrar solo las cancelaciones y se enfoca en nuestra pregunta directiva: **¿cómo identificar si la baja adopción de funcionalidades y canales anticipa la cancelación?**
 
 - Medimos la adopción de **funcionalidades** con el uso: **caída de 50% o más en los chats** contra los dos meses anteriores, **proporción de días activos** y **uso bajo dos meses seguidos**.
 - Medimos la adopción de **canales** con el estado de **WhatsApp Web** al cierre del mes, con las reglas de la Evidencia 4 (las desconexiones de menos de 24 h no cuentan).
@@ -104,3 +104,35 @@ Construimos el mismo tablero de Streamlit en `dash/app.py`, con los mismos datos
 | ¿Qué les resultó más difícil o más lento? | Escribir el layout: hay que cuidar los corchetes y paréntesis del árbol, y cada estilo se define a mano en camelCase. En Streamlit con una línea (`st.metric`, `st.columns`) ya teníamos el resultado. Además, en Dash los filtros no hacen nada hasta escribir los callbacks, mientras que en Streamlit funcionan desde el inicio. |
 | ¿Hay algo de su wireframe original que en Streamlit no pudieron construir y en Dash sí? | Sí. La barra lateral con el menú de pantallas (Dashboard, Explorador, Perfil 360, Análisis) y el ancho fijo de 240 px; la tarjeta de riesgo marcada en rojo con ícono de alerta y del doble de ancho; y la tabla con encabezado oscuro como en Figma. La columna "Ver perfil" clicable todavía no, porque necesita callbacks. |
 | Con lo visto hasta hoy, ¿con cuál se inclinan? ¿Por qué? | Por ahora nos inclinamos por Dash, porque se parece más a nuestro wireframe y nos deja agregar las pantallas del Explorador y el Perfil 360. Pero Streamlit fue mucho más rápido de construir. La decisión final depende de qué tan complicados sean los callbacks en el Laboratorio 12. |
+
+---
+
+# Laboratorio 12 · Dash, los callbacks
+
+## Parte A · El callback mínimo (`dash/minimo.py`)
+
+La función `mostrar()` no se llama en ninguna línea del archivo: `@app.callback` la **registra** y Dash la ejecuta cuando cambia el valor del dropdown `color`. Por eso, al abrir la página ya dice "Elegiste: Azul" sin tocar nada: el callback corre una vez al arrancar con los valores iniciales.
+
+### A.3 · Romper las tres reglas a propósito
+
+| Cambio | Lo que observamos |
+|---|---|
+| En el Input, cambiar `"color"` por `"colores"` | La app sí arranca: la terminal no marca error, porque Dash no revisa los id al iniciar.<br>En la página no aparece "Elegiste: Azul", porque el callback nunca corre. |
+| Agregar un segundo `Output("salida2", "children")` sin crear el componente ni cambiar el return | La app también arranca, y el error aparece en cuanto se carga la página, sin tocar nada.<br>El mensaje es "ID not found in layout", porque el Output apunta a "salida2" y ese componente no existe. |
+| Cambiar `value` por `options` en el Input | No hay ningún error.<br>La página muestra "Elegiste: ['Rojo', 'Azul', 'Verde']", porque la función ahora recibe la lista de opciones y no la opción elegida. |
+
+## Partes B y C · El tablero conectado
+
+- Las tarjetas y las gráficas ya no tienen valores fijos en el layout: solo su `id`. Todo lo llena **un solo callback** (`actualizar`) con 4 Input (periodo, plan, segmento e industria) y 17 Output (indicadores, gráficas, tablas, textos y el aviso).
+- Los argumentos de la función van en el mismo orden que los Input, y el return en el mismo orden que los Output (numerados en el código).
+- **Selección vacía:** si un filtro queda sin opciones, el callback devuelve guiones en los indicadores, figuras vacías y un aviso en `aviso-vacio`, sin que la aplicación se caiga. Cuando sí hay datos devuelve `None` y el aviso desaparece.
+- El filtro de Industria vacío significa "todas las industrias", como indica su texto de ayuda. Si el periodo elegido no tiene desenlace (septiembre y octubre), también aparece un aviso.
+
+## Bitácora de comparación (cierre)
+
+| Pregunta | Nuestra respuesta |
+|---|---|
+| ¿En cuál de las dos escribieron menos código para el mismo resultado? | En Streamlit: unas 520 líneas de código contra unas 650 en Dash para el mismo tablero. En Dash, además del layout, hay que declarar cada Output y cuidar que el return devuelva todos los valores en orden, incluida la rama de selección vacía. |
+| ¿En cuál entendieron mejor *por qué* pasaban las cosas? | En Dash. El callback dice explícitamente qué entra (Input) y qué cambia (Output), así que se ve qué parte de la pantalla depende de qué filtro. En Streamlit todo se vuelve a ejecutar de arriba abajo, y eso al principio nos confundió (el contador que no pasaba de 1). |
+| ¿Qué les dio más problemas en Streamlit? ¿Y en Dash? | En Streamlit: el modelo de reejecución, la caché, y no poder colocar los elementos como en el wireframe (menú lateral, tarjeta de alerta, ancho fijo). En Dash: los corchetes y paréntesis del árbol, escribir los estilos a mano y mantener el orden entre los Output y el return. |
+| Pensando en cómo va a crecer su plataforma, ¿con cuál se quedan y por qué? | Con Dash. Nuestro sitemap tiene cuatro pantallas (Dashboard, Explorador de cuentas, Perfil 360 y Análisis de adopción) y la tabla debe llevar al perfil de cada cuenta. Dash nos deja construir esa navegación y controlar qué se actualiza con cada interacción, y su layout ya se parece a nuestro wireframe. Streamlit fue más rápido para prototipar, pero para crecer necesitamos ese control. |

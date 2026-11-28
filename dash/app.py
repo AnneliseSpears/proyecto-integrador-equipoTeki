@@ -2,8 +2,9 @@
 LeadSales · Monitor de adopción y riesgo de churn, versión Dash (Equipo Teki)
 
 Laboratorio 11: el mismo tablero de Streamlit (app/app.py), construido como un
-árbol de componentes. Los filtros ya tienen su id, pero todavía no hacen nada:
-se conectan con callbacks en el Laboratorio 12.
+árbol de componentes.
+Laboratorio 12: los filtros se conectan con un solo callback que actualiza
+indicadores, gráficas y tablas, y muestra un aviso si la selección queda vacía.
 
 Se ejecuta desde la raíz del repositorio:
     python dash/app.py
@@ -15,7 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from dash import Dash, dash_table, dcc, html
+from dash import Dash, Input, Output, dash_table, dcc, html
 
 # =============================================================================
 # 1. Estilos reutilizables (se definen una sola vez)
@@ -321,26 +322,45 @@ def cargar(carpeta):
 base, antes_baja, motivos = cargar(CARPETA_DATOS)
 CORTES = sorted(base["corte"].unique())
 
+TODAS_INDUSTRIAS = sorted(base["industria"].unique())
+
+TEXTO_AYUDA = """
+**Qué responde este tablero.** Si la baja adopción anticipa la cancelación. Para cada cuenta activa al
+cierre de un mes revisamos cómo venía usando LeadSales y si canceló en los **60 días siguientes**.
+
+**Las señales de adopción**
+- **Caída ≥50% de chats:** los chats del mes son la mitad o menos del promedio de los dos meses anteriores.
+- **Días activos:** proporción de días del mes en los que la cuenta usó la plataforma.
+- **WhatsApp Web desconectado:** el canal estaba desconectado (por más de 24 h) al cierre del mes.
+
+**Qué encontramos.** La baja adopción **sí anticipa la cancelación**, tanto en el **uso** como en el
+**canal**. Las cuentas con caída de chats ≥50% o con pocos días activos cancelan unas 3 veces más, y lo
+mismo pasa con las que tienen WhatsApp Web desconectado al cierre del mes. El patrón se repite en los
+4 meses con desenlace y se mantiene incluso entre cuentas con uso alto y estable. En el modelo de la
+Evidencia 4 (que medía la conexión de otra forma, como % del tiempo conectado en 3 meses), el canal no
+mejoró la predicción de forma consistente una vez que ya se conocía el uso. Por eso lo usamos como señal
+complementaria y de diagnóstico (¿la caída es un problema técnico?). La **mora** duplica el riesgo, y
+abrir **tickets de soporte** se asocia con *menos* churn: quien pide ayuda sigue comprometido.
+
+**Limitaciones**
+- Es una **asociación**, no una causa: una caída no significa que la cuenta se vaya a ir.
+- Septiembre y octubre todavía no tienen desenlace a 60 días.
+- Solo se usa WhatsApp Web: Instagram, Facebook y la API tienen desconexiones faltantes y borrados masivos.
+  En julio hubo una migración técnica que generó desconexiones que no son decisión del cliente.
+- Solo se incluyen cuentas con al menos 3 meses seguidos de historial.
+"""
+
 # =============================================================================
-# 3. Cálculos: indicadores, figuras y tabla
-#    Hoy se calculan una vez con todos los datos. En el Lab 12 estas mismas
-#    funciones se llamarán desde los callbacks con los datos filtrados.
+# 3. Cálculos: indicadores, figuras y tablas
+#    Ya no se calculan al arrancar: el callback (sección 6) los llama con los
+#    datos filtrados cada vez que se mueve un filtro.
 # =============================================================================
 
-
-def indicadores(df):
-    con_desenlace = df[df["churn_60d"].notna()]
-    ultimo = df["corte"].max()
-    churn_con = con_desenlace.loc[con_desenlace["caida_50"] == 1, "churn_60d"].mean() * 100
-    churn_sin = con_desenlace.loc[con_desenlace["caida_50"] == 0, "churn_60d"].mean() * 100
-    return {
-        "activas": f"{df.loc[df['corte'] == ultimo, 'account_id'].nunique():,}",
-        "activas_nota": f"Al cierre de {etiqueta_mes(ultimo)}",
-        "caida": f"{df['caida_50'].mean() * 100:.1f}%",
-        "churn": f"{con_desenlace['churn_60d'].mean() * 100:.1f}%",
-        "veces": f"{churn_con / churn_sin:.1f}× más",
-        "veces_nota": f"{churn_con:.0f}% de churn con caída vs {churn_sin:.0f}% sin caída",
-    }
+COLUMNAS_SENALES = ["Tipo", "Señal", "Casos con la señal (%)", "Churn con la señal (%)",
+                    "Churn sin la señal (%)", "Veces más"]
+COLUMNAS_RIESGO = ["Account ID", "Plan", "Segmento", "Industria", "Chats del mes",
+                   "Chats promedio (2 meses previos)", "Variación (%)", "Días activos (%)",
+                   "Desenlace a 60 días"]
 
 
 def ajustar(fig):
@@ -352,15 +372,56 @@ def ajustar(fig):
     return fig
 
 
+def figura_vacia(titulo):
+    """Figura sin datos, para cuando los filtros no dejan nada que graficar."""
+    fig = px.scatter(title=titulo)
+    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False)
+    return ajustar(fig)
+
+
+def registros(df):
+    """Convierte una tabla a filas para DataTable (los vacíos se mandan como None)."""
+    return df.astype(object).where(df.notna(), None).to_dict("records")
+
+
+def indicadores(df):
+    con_desenlace = df[df["churn_60d"].notna()]
+    ultimo = df["corte"].max()
+    resultado = {
+        "activas": f"{df.loc[df['corte'] == ultimo, 'account_id'].nunique():,}",
+        "activas_nota": f"Al cierre de {etiqueta_mes(ultimo)}",
+        "caida": f"{df['caida_50'].mean() * 100:.1f}%" if df["caida_50"].notna().any() else "Sin dato",
+        "churn": "Sin desenlace",
+        "veces": "Sin desenlace",
+        "veces_nota": "Elige algún mes entre mayo y agosto",
+    }
+    if con_desenlace.empty:
+        return resultado
+    resultado["churn"] = f"{con_desenlace['churn_60d'].mean() * 100:.1f}%"
+    churn_con = con_desenlace.loc[con_desenlace["caida_50"] == 1, "churn_60d"].mean() * 100
+    churn_sin = con_desenlace.loc[con_desenlace["caida_50"] == 0, "churn_60d"].mean() * 100
+    if pd.notna(churn_con) and pd.notna(churn_sin) and churn_sin > 0:
+        resultado["veces"] = f"{churn_con / churn_sin:.1f}× más"
+        resultado["veces_nota"] = f"{churn_con:.0f}% de churn con caída vs {churn_sin:.0f}% sin caída"
+    else:
+        resultado["veces"] = "Sin dato"
+        resultado["veces_nota"] = "No hay suficientes cuentas con y sin caída"
+    return resultado
+
+
 def figura_por_corte(df):
+    titulo = "Churn a 60 días: con caída de chats vs sin caída"
     con_desenlace = df[df["churn_60d"].notna()].dropna(subset=["caida_50"])
+    if con_desenlace.empty:
+        return figura_vacia(titulo)
     datos = con_desenlace.groupby(["corte", "caida_50"], as_index=False)["churn_60d"].mean()
     datos["churn_%"] = datos["churn_60d"] * 100
     datos["Mes de corte"] = datos["corte"].map(etiqueta_mes)
     datos["Actividad"] = datos["caida_50"].map({1.0: "Con caída ≥50%", 0.0: "Sin caída"})
     fig = px.bar(
         datos, x="Mes de corte", y="churn_%", color="Actividad", barmode="group", text_auto=".0f",
-        title="Churn a 60 días: con caída de chats vs sin caída",
+        title=titulo,
         labels={"churn_%": "Churn a 60 días (%)"},
         color_discrete_map={"Con caída ≥50%": ROJO, "Sin caída": GRIS_BARRA},
     )
@@ -369,14 +430,17 @@ def figura_por_corte(df):
 
 
 def figura_por_nivel(df):
+    titulo = "Churn a 60 días según los días activos del mes"
     con_desenlace = df[df["churn_60d"].notna()]
+    if con_desenlace.empty:
+        return figura_vacia(titulo)
     datos = con_desenlace.groupby("nivel_adopcion", as_index=False).agg(
         churn=("churn_60d", "mean"), cuentas=("account_id", "size")
     )
     datos["churn_%"] = datos["churn"] * 100
     fig = px.bar(
         datos, x="churn_%", y="nivel_adopcion", orientation="h", text_auto=".1f",
-        title="Churn a 60 días según los días activos del mes",
+        title=titulo,
         labels={"churn_%": "Churn a 60 días (%)", "nivel_adopcion": "Días activos en el mes"},
         category_orders={"nivel_adopcion": ORDEN_NIVELES}, hover_data={"cuentas": True},
         color_discrete_sequence=[GRIS_BARRA],
@@ -385,6 +449,9 @@ def figura_por_nivel(df):
 
 
 def figura_antes_baja(bajas, referencia):
+    titulo = "¿El uso cae antes de cancelar? Días activos (mediana) de quienes cancelaron"
+    if bajas.empty:
+        return figura_vacia(titulo)
     datos = bajas.groupby("meses_antes", as_index=False).agg(
         dias_activos=("prop_dias_activos", "median"), cuentas=("account_id", "nunique")
     )
@@ -395,27 +462,31 @@ def figura_antes_baja(bajas, referencia):
     datos = datos.sort_values("meses_antes", ascending=False)
     fig = px.line(
         datos, x="Mes", y="dias_activos", markers=True,
-        title="¿El uso cae antes de cancelar? Días activos (mediana) de quienes cancelaron",
+        title=titulo,
         labels={"dias_activos": "Días activos del mes (%)", "Mes": ""},
         hover_data={"cuentas": True}, color_discrete_sequence=[ROJO],
     )
-    fig.add_hline(y=referencia, line_dash="dot", annotation_text="Cuentas que se quedan")
+    if pd.notna(referencia):
+        fig.add_hline(y=referencia, line_dash="dot", annotation_text="Cuentas que se quedan")
     fig.update_yaxes(range=[0, 105])
     return ajustar(fig)
 
 
 def figura_motivos(df):
+    titulo = "¿Qué dijeron al cancelar?"
     canceladas = (
         df[df["churn_60d"] == 1].sort_values("corte").drop_duplicates("account_id", keep="last")
         .merge(motivos, on="account_id", how="inner")
     )
+    if canceladas.empty:
+        return figura_vacia(titulo)
     canceladas["Actividad al corte"] = canceladas["caida_50"].map(
         {1.0: "Con caída ≥50%", 0.0: "Sin caída"}
     ).fillna("No medible")
     datos = canceladas.groupby(["motivo", "Actividad al corte"], as_index=False).size()
     fig = px.bar(
         datos, x="size", y="motivo", color="Actividad al corte", orientation="h",
-        title="¿Qué dijeron al cancelar?", labels={"size": "Cuentas", "motivo": ""},
+        title=titulo, labels={"size": "Cuentas", "motivo": ""},
         color_discrete_map={"Con caída ≥50%": ROJO, "Sin caída": GRIS_BARRA, "No medible": "#D5D8DC"},
     )
     return ajustar(fig)
@@ -435,41 +506,31 @@ def tabla_en_riesgo(df):
         "Días activos (%)": (en_riesgo["prop_dias_activos"] * 100).round(0),
         "Desenlace a 60 días": en_riesgo["churn_60d"].map({1.0: "Canceló", 0.0: "Sigue activa"})
         .fillna("Aún sin desenlace"),
-    })
+    }, columns=COLUMNAS_RIESGO)
 
-
-# Valores iniciales: todo el periodo y todas las cuentas (como abre Streamlit)
-kpis = indicadores(base)
-fig_corte = figura_por_corte(base)
-fig_nivel = figura_por_nivel(base)
-referencia_quedan = base.loc[base["churn_60d"] == 0, "prop_dias_activos"].median() * 100
-fig_antes = figura_antes_baja(
-    antes_baja[(antes_baja["fecha_baja"] > CORTES[0])
-               & (antes_baja["fecha_baja"] <= CORTES[-1] + pd.Timedelta(days=HORIZONTE_DIAS))],
-    referencia_quedan,
-)
-fig_motivos = figura_motivos(base)
-riesgo = tabla_en_riesgo(base)
-senales = comparar_senales(base)
-fig_senales = figura_senales(senales)
-fig_uso_canal = figura_uso_canal(base)
 
 # =============================================================================
 # 4. Pedazos de árbol reutilizables
 # =============================================================================
+ESTILO_AVISO = {"backgroundColor": "#FFF4E0", "color": "#A35E00", "padding": "12px 16px",
+                "borderRadius": "6px", "marginBottom": "16px", "fontWeight": "600"}
+ESTILO_NOTA_TARJETA = {"fontSize": "12px", "color": GRIS, "marginTop": "4px"}
 
 
-def tarjeta(titulo, valor, nota, id_valor, alerta=False, ancho="1"):
-    """Tarjeta de indicador. alerta=True la marca en rojo con un ícono, como en el wireframe."""
+def tarjeta(titulo, id_valor, nota=None, nota_dinamica=False, alerta=False, ancho="1"):
+    """Tarjeta de indicador SIN valor fijo: el callback llena el elemento con id=id_valor.
+    nota_dinamica=True deja también la nota vacía, con id=f"{id_valor}-nota", para el callback.
+    alerta=True la marca en rojo con un ícono, como en el wireframe."""
     color = ROJO if alerta else TINTA
     encabezado = [titulo, html.Span(" ⚠", style={"color": ROJO})] if alerta else [titulo]
     hijos = [
         html.Div(encabezado, style={"fontSize": "13px", "color": GRIS}),
-        html.Div(valor, id=id_valor, style={"fontSize": "26px", "fontWeight": "600", "color": color}),
+        html.Div(id=id_valor, style={"fontSize": "26px", "fontWeight": "600", "color": color}),
     ]
-    if nota:
-        hijos.append(html.Div(nota, id=f"{id_valor}-nota",
-                              style={"fontSize": "12px", "color": GRIS, "marginTop": "4px"}))
+    if nota_dinamica:
+        hijos.append(html.Div(id=f"{id_valor}-nota", style=ESTILO_NOTA_TARJETA))
+    elif nota:
+        hijos.append(html.Div(nota, style=ESTILO_NOTA_TARJETA))
     estilo = {**ESTILO_TARJETA, "flex": ancho}
     if alerta:
         estilo["borderTop"] = f"3px solid {ROJO}"
@@ -480,8 +541,22 @@ def opcion_menu(texto, activa=False):
     return html.Div(texto, style=ESTILO_MENU_ACTIVO if activa else ESTILO_MENU)
 
 
-def grafica(figura, id_grafica, alto="380px"):
-    return html.Div(dcc.Graph(id=id_grafica, figure=figura, style={"height": alto}), style=ESTILO_TARJETA)
+def grafica(id_grafica, alto="380px"):
+    """Gráfica SIN figura fija: el callback la llena."""
+    return html.Div(dcc.Graph(id=id_grafica, style={"height": alto}), style=ESTILO_TARJETA)
+
+
+def tabla(id_tabla, columnas, **extra):
+    return dash_table.DataTable(
+        id=id_tabla,
+        columns=[{"name": c, "id": c} for c in columnas],
+        data=[],
+        style_table={"overflowX": "auto"},
+        style_header={"backgroundColor": "#2F3A40", "color": "white", "fontWeight": "600"},
+        style_cell={"fontFamily": "Segoe UI, Helvetica, Arial, sans-serif", "fontSize": "13px",
+                    "padding": "6px", "textAlign": "left"},
+        **extra,
+    )
 
 
 # =============================================================================
@@ -499,7 +574,7 @@ barra_lateral = html.Div([
     opcion_menu("Perfil 360"),
     opcion_menu("Análisis de adopción"),
 
-    # --- Filtros (todavía sin efecto: se conectan en el Lab 12) ---
+    # --- Filtros: cada uno es un Input del callback ---
     html.Div("FILTROS GLOBALES", style=ESTILO_TITULO_SECCION),
 
     html.Label("Periodo (mes de corte)", style=ESTILO_ETIQUETA),
@@ -531,11 +606,12 @@ barra_lateral = html.Div([
     html.Label("Industria", style=ESTILO_ETIQUETA),
     dcc.Dropdown(
         id="filtro-industria",
-        options=sorted(base["industria"].unique()),
+        options=TODAS_INDUSTRIAS,
         value=[],
         multi=True,
         placeholder="Todas las industrias",
     ),
+    html.Div("Deja Industria vacía para ver todas.", style={"fontSize": "11px", "color": GRIS, "marginTop": "4px"}),
 ], style=ESTILO_BARRA_LATERAL)
 
 contenido = html.Div([
@@ -546,25 +622,23 @@ contenido = html.Div([
         "Comparamos cuántas cuentas cancelan en los 60 días siguientes al cierre de cada mes, "
         "según cómo venían usando LeadSales y si tenían su canal conectado.",
     ], style={"color": TINTA}),
-    html.P(
-        f"Periodo: {etiqueta_mes(CORTES[0])} a {etiqueta_mes(CORTES[-1])} · Datos al 31-oct-2026",
-        id="texto-periodo", style={"color": GRIS, "fontSize": "13px"},
-    ),
+    html.P(id="texto-periodo", style={"color": GRIS, "fontSize": "13px"}),
+
+    # --- Aviso: el callback lo llena solo cuando la selección queda vacía ---
+    html.Div(id="aviso-vacio"),
 
     # --- Indicadores (la de riesgo, el doble de ancha y marcada como alerta) ---
     html.Div([
-        tarjeta("Cuentas activas", kpis["activas"], kpis["activas_nota"], id_valor="kpi-activas"),
-        tarjeta("Con caída ≥50% de chats", kpis["caida"], "Contra el promedio de los 2 meses previos",
-                id_valor="kpi-caida"),
-        tarjeta("Churn a 60 días", kpis["churn"], "Cancelan en los 60 días siguientes", id_valor="kpi-churn"),
-        tarjeta("Riesgo con caída", kpis["veces"], kpis["veces_nota"], alerta=True,
-                id_valor="kpi-riesgo", ancho="2"),
+        tarjeta("Cuentas activas", "kpi-activas", nota_dinamica=True),
+        tarjeta("Con caída ≥50% de chats", "kpi-caida", nota="Contra el promedio de los 2 meses previos"),
+        tarjeta("Churn a 60 días", "kpi-churn", nota="Cancelan en los 60 días siguientes"),
+        tarjeta("Riesgo con caída", "kpi-riesgo", nota_dinamica=True, alerta=True, ancho="2"),
     ], style=ESTILO_FILA),
 
     # --- Dos gráficas lado a lado ---
     html.Div([
-        grafica(fig_corte, "grafica-corte"),
-        grafica(fig_nivel, "grafica-nivel"),
+        grafica("grafica-corte"),
+        grafica("grafica-nivel"),
     ], style=ESTILO_FILA),
 
     # --- Comparación de señales: ¿qué tipo de baja adopción anticipa la cancelación? ---
@@ -576,87 +650,151 @@ contenido = html.Div([
         style={"color": GRIS, "fontSize": "13px", "marginTop": "0"},
     ),
     html.Div([
-        grafica(fig_senales, "grafica-senales", alto="400px"),
-        grafica(fig_uso_canal, "grafica-uso-canal", alto="400px"),
+        grafica("grafica-senales", alto="400px"),
+        grafica("grafica-uso-canal", alto="400px"),
     ], style=ESTILO_FILA),
     html.Div([
-        dash_table.DataTable(
-            id="tabla-senales",
-            columns=[{"name": c, "id": c} for c in senales.columns],
-            data=senales.to_dict("records"),
-            style_table={"overflowX": "auto"},
-            style_header={"backgroundColor": "#2F3A40", "color": "white", "fontWeight": "600"},
-            style_cell={"fontFamily": "Segoe UI, Helvetica, Arial, sans-serif", "fontSize": "13px",
-                        "padding": "6px", "textAlign": "left"},
-            style_data_conditional=[
-                {"if": {"filter_query": "{Veces más} >= 2"}, "color": ROJO, "fontWeight": "600"},
-            ],
-        ),
+        tabla("tabla-senales", COLUMNAS_SENALES, style_data_conditional=[
+            {"if": {"filter_query": "{Veces más} >= 2"}, "color": ROJO, "fontWeight": "600"},
+        ]),
         html.P("Casos = cuenta y mes de corte. El canal solo considera cuentas con WhatsApp Web conectado o "
                "desconectado al cierre; las que no usan WhatsApp Web (por ejemplo, las de API) quedan fuera.",
                style={"color": GRIS, "fontSize": "12px", "marginBottom": "0"}),
     ], style={**ESTILO_TARJETA, "marginBottom": "16px"}),
 
     # --- Gráfica ancha ---
-    html.Div(grafica(fig_antes, "grafica-antes-baja", alto="340px"), style={"marginBottom": "16px"}),
+    html.Div(grafica("grafica-antes-baja", alto="340px"), style={"marginBottom": "16px"}),
 
     # --- Detalle en pestañas ---
     html.Div(dcc.Tabs(id="pestanas", value="riesgo", children=[
         dcc.Tab(label="Cuentas con mayor caída", value="riesgo", children=[
-            html.P(f"{len(riesgo):,} cuentas tienen caída ≥50% de chats al cierre de {etiqueta_mes(CORTES[-1])}. "
-                   "Son las primeras que Customer Success debería revisar.",
-                   id="texto-tabla", style={"color": GRIS, "fontSize": "13px", "marginTop": "12px"}),
-            dash_table.DataTable(
-                id="tabla-riesgo",
-                columns=[{"name": c, "id": c} for c in riesgo.columns],
-                data=riesgo.to_dict("records"),
-                page_size=10,
-                sort_action="native",
-                style_table={"overflowX": "auto"},
-                style_header={"backgroundColor": "#2F3A40", "color": "white", "fontWeight": "600"},
-                style_cell={"fontFamily": "Segoe UI, Helvetica, Arial, sans-serif", "fontSize": "13px",
-                            "padding": "6px", "textAlign": "left"},
-                style_data_conditional=[
-                    {"if": {"filter_query": '{Desenlace a 60 días} = "Canceló"'}, "color": ROJO, "fontWeight": "600"},
-                ],
-            ),
+            html.P(id="texto-tabla", style={"color": GRIS, "fontSize": "13px", "marginTop": "12px"}),
+            tabla("tabla-riesgo", COLUMNAS_RIESGO, page_size=10, sort_action="native", style_data_conditional=[
+                {"if": {"filter_query": '{Desenlace a 60 días} = "Canceló"'}, "color": ROJO, "fontWeight": "600"},
+            ]),
         ]),
         dcc.Tab(label="¿Por qué se van?", value="motivos", children=[
-            dcc.Graph(id="grafica-motivos", figure=fig_motivos, style={"height": "380px"}),
+            dcc.Graph(id="grafica-motivos", style={"height": "380px"}),
             html.P("La caída de uso dice cuándo actuar; el motivo de cancelación dice qué ofrecer.",
                    style={"color": GRIS, "fontSize": "13px"}),
         ]),
         dcc.Tab(label="Cómo leer el tablero", value="ayuda", children=[
-            dcc.Markdown("""
-**Qué responde este tablero.** Si la baja adopción anticipa la cancelación. Para cada cuenta activa al
-cierre de un mes revisamos cómo venía usando LeadSales y si canceló en los **60 días siguientes**.
-
-**Las señales de adopción**
-- **Caída ≥50% de chats:** los chats del mes son la mitad o menos del promedio de los dos meses anteriores.
-- **Días activos:** proporción de días del mes en los que la cuenta usó la plataforma.
-- **WhatsApp Web desconectado:** el canal estaba desconectado (por más de 24 h) al cierre del mes.
-
-**Qué encontramos.** La baja adopción **sí anticipa la cancelación**, tanto en el **uso** como en el
-**canal**. Las cuentas con caída de chats ≥50% o con pocos días activos cancelan unas 3 veces más, y lo
-mismo pasa con las que tienen WhatsApp Web desconectado al cierre del mes. El patrón se repite en los
-4 meses con desenlace y se mantiene incluso entre cuentas con uso alto y estable. En el modelo de la
-Evidencia 4 (que medía la conexión de otra forma, como % del tiempo conectado en 3 meses), el canal no
-mejoró la predicción de forma consistente una vez que ya se conocía el uso. Por eso lo usamos como señal
-complementaria y de diagnóstico (¿la caída es un problema técnico?). La **mora** duplica el riesgo, y
-abrir **tickets de soporte** se asocia con *menos* churn: quien pide ayuda sigue comprometido.
-
-**Limitaciones**
-- Es una **asociación**, no una causa: una caída no significa que la cuenta se vaya a ir.
-- Septiembre y octubre todavía no tienen desenlace a 60 días.
-- Solo se usa WhatsApp Web: Instagram, Facebook y la API tienen desconexiones faltantes y borrados masivos.
-  En julio hubo una migración técnica que generó desconexiones que no son decisión del cliente.
-- Solo se incluyen cuentas con al menos 3 meses seguidos de historial.
-""", style={"padding": "8px 4px"}),
+            dcc.Markdown(TEXTO_AYUDA, style={"padding": "8px 4px"}),
         ]),
     ]), style=ESTILO_TARJETA),
 ], style=ESTILO_CONTENIDO)
 
 app.layout = html.Div([barra_lateral, contenido], style=ESTILO_PAGINA)
+
+
+# =============================================================================
+# 6. Callback: un solo callback actualiza todo el tablero
+#    Los argumentos llegan en el mismo orden que los Input, y el return
+#    devuelve los valores en el mismo orden que los Output.
+# =============================================================================
+@app.callback(
+    Output("texto-periodo", "children"),       # 1
+    Output("kpi-activas", "children"),         # 2
+    Output("kpi-activas-nota", "children"),    # 3
+    Output("kpi-caida", "children"),           # 4
+    Output("kpi-churn", "children"),           # 5
+    Output("kpi-riesgo", "children"),          # 6
+    Output("kpi-riesgo-nota", "children"),     # 7
+    Output("grafica-corte", "figure"),         # 8
+    Output("grafica-nivel", "figure"),         # 9
+    Output("grafica-senales", "figure"),       # 10
+    Output("grafica-uso-canal", "figure"),     # 11
+    Output("tabla-senales", "data"),           # 12
+    Output("grafica-antes-baja", "figure"),    # 13
+    Output("texto-tabla", "children"),         # 14
+    Output("tabla-riesgo", "data"),            # 15
+    Output("grafica-motivos", "figure"),       # 16
+    Output("aviso-vacio", "children"),         # 17
+    Input("filtro-periodo", "value"),
+    Input("filtro-plan", "value"),
+    Input("filtro-segmento", "value"),
+    Input("filtro-industria", "value"),
+)
+def actualizar(rango, planes, segmentos, industrias):
+    inicio, fin = CORTES[rango[0]], CORTES[rango[1]]
+    texto_periodo = f"Periodo: {etiqueta_mes(inicio)} a {etiqueta_mes(fin)} · Datos al 31-oct-2026"
+    industrias = industrias or TODAS_INDUSTRIAS  # Industria vacía = todas
+
+    # --- Un solo bloque de filtrado ---
+    filtrados = base[
+        base["corte"].between(inicio, fin)
+        & base["plan"].isin(planes or [])
+        & base["segmento"].isin(segmentos or [])
+        & base["industria"].isin(industrias)
+    ]
+
+    # --- Selección vacía: misma cantidad de valores que el return normal ---
+    if filtrados.empty:
+        vacia = figura_vacia("Sin datos para los filtros seleccionados")
+        aviso = html.Div("No hay cuentas con esos filtros. Amplía la selección.", style=ESTILO_AVISO)
+        return (
+            texto_periodo,                 # 1
+            "—", "",                        # 2, 3
+            "—",                            # 4
+            "—",                            # 5
+            "—", "",                        # 6, 7
+            vacia, vacia, vacia, vacia,     # 8, 9, 10, 11
+            [],                             # 12
+            vacia,                          # 13
+            "",                             # 14
+            [],                             # 15
+            vacia,                          # 16
+            aviso,                          # 17
+        )
+
+    # --- Cálculos con los datos filtrados ---
+    kpis = indicadores(filtrados)
+    con_desenlace = filtrados[filtrados["churn_60d"].notna()]
+
+    senales = comparar_senales(filtrados)
+    fig_senales = figura_senales(senales) if not senales.empty else figura_vacia("Churn a 60 días con y sin cada señal")
+    fig_uso_canal = figura_uso_canal(filtrados)
+    if fig_uso_canal is None:
+        fig_uso_canal = figura_vacia("¿El canal suma algo al uso?")
+
+    bajas = antes_baja[
+        antes_baja["plan"].isin(planes or [])
+        & antes_baja["segmento"].isin(segmentos or [])
+        & antes_baja["industria"].isin(industrias)
+        & (antes_baja["fecha_baja"] > inicio)
+        & (antes_baja["fecha_baja"] <= fin + pd.Timedelta(days=HORIZONTE_DIAS))
+    ]
+    referencia = con_desenlace.loc[con_desenlace["churn_60d"] == 0, "prop_dias_activos"].median() * 100
+
+    riesgo = tabla_en_riesgo(filtrados)
+    ultimo = filtrados["corte"].max()
+    texto_tabla = (f"{len(riesgo):,} cuentas tienen caída ≥50% de chats al cierre de {etiqueta_mes(ultimo)}. "
+                   "Son las primeras que Customer Success debería revisar.")
+
+    # Aviso informativo si el periodo elegido todavía no tiene desenlace (sep y oct)
+    aviso = None
+    if con_desenlace.empty:
+        aviso = html.Div("Septiembre y octubre todavía no tienen desenlace a 60 días. "
+                         "Incluye algún mes entre mayo y agosto para ver el churn.", style=ESTILO_AVISO)
+
+    return (
+        texto_periodo,                                   # 1
+        kpis["activas"], kpis["activas_nota"],           # 2, 3
+        kpis["caida"],                                   # 4
+        kpis["churn"],                                   # 5
+        kpis["veces"], kpis["veces_nota"],               # 6, 7
+        figura_por_corte(filtrados),                     # 8
+        figura_por_nivel(filtrados),                     # 9
+        fig_senales,                                     # 10
+        fig_uso_canal,                                   # 11
+        registros(senales),                              # 12
+        figura_antes_baja(bajas, referencia),            # 13
+        texto_tabla,                                     # 14
+        registros(riesgo),                               # 15
+        figura_motivos(filtrados),                       # 16
+        aviso,                                           # 17
+    )
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=8050)
