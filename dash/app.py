@@ -5,6 +5,9 @@ Laboratorio 11: el mismo tablero de Streamlit (app/app.py), construido como un
 árbol de componentes.
 Laboratorio 12: los filtros se conectan con un solo callback que actualiza
 indicadores, gráficas y tablas, y muestra un aviso si la selección queda vacía.
+Evidencia 5: colores alineados con el prototipo de Figma (paleta de LeadSales) y
+sección "¿Quién está en riesgo hoy?" con el score del modelo de la Evidencia 4
+(lo genera el notebook de la Evidencia 5 en datos/scores_modelo_hoy.csv).
 
 Se ejecuta desde la raíz del repositorio:
     python dash/app.py
@@ -21,14 +24,38 @@ from dash import Dash, Input, Output, dash_table, dcc, html
 # =============================================================================
 # 1. Estilos reutilizables (se definen una sola vez)
 # =============================================================================
-FONDO = "#F4F6F9"
-TINTA = "#14285C"
-GRIS = "#5F6B7A"
-ROJO = "#C0392B"
-GRIS_BARRA = "#7F8C8D"
+# Paleta del prototipo de Figma (Evidencia 5): sale del azul de LeadSales con la teoría del color
+#   60 % fondo neutro · 30 % marca · 10 % acento (complementario, solo para acciones)
+#   rojo, naranja y verde solo con su significado (riesgo, advertencia, éxito)
+FONDO = "#F5F6FA"        # 60 % · fondo de la página
+SUPERFICIE = "#FFFFFF"   # 60 % · tarjetas y barra lateral
+MARCA = "#4145E3"        # 30 % · logo, menú activo y serie de referencia en las gráficas
+MARCA_TINTE = "#E4E5FB"  # tinte de la marca (fondos suaves)
+ACENTO = "#E3DE41"       # 10 % · complementario de la marca: solo botones de acción, con texto oscuro
+TINTA = "#202B37"        # texto principal (13.3:1 sobre el fondo)
+GRIS = "#637083"         # texto secundario (5.0:1 sobre blanco)
+BORDE = "#E1E4EC"
+ROJO = "#DC2626"         # semántico · riesgo
+ADVERTENCIA = "#C2410C"  # semántico · atención (pasa WCAG con texto blanco: 5.2:1)
+NEUTRO = "#C5C9D4"       # casos que no se pueden medir
+GRIS_BARRA = MARCA       # la serie "sin la señal" ahora es azul de marca, como en Figma
+FUENTE = "Inter, Segoe UI, Helvetica, Arial, sans-serif"
+
+# Perfiles de adopción del K-Means de la Evidencia 4: un color por perfil en todo el tablero
+COLOR_PERFIL = {
+    "Descenso de actividad": ROJO,
+    "Uso muy bajo o nulo": ADVERTENCIA,
+    "Uso estable": MARCA,
+}
+ACCION_PERFIL = {
+    "Descenso de actividad": "Primera prioridad: llamada de diagnóstico, revisar si WhatsApp Web está desconectado y ofrecer capacitación.",
+    "Uso muy bajo o nulo": "Reactivación o ajuste de plan antes de su renovación.",
+    "Uso estable": "Seguimiento normal; atender solo si entra al decil 1 o desconecta WhatsApp Web.",
+}
+UMBRAL_MODELO = 0.095  # umbral del modelo elegido con F2 en la Evidencia 4
 
 ESTILO_PAGINA = {
-    "fontFamily": "Segoe UI, Helvetica, Arial, sans-serif",
+    "fontFamily": FUENTE,
     "backgroundColor": FONDO,
     "display": "flex",
     "minHeight": "100vh",
@@ -37,26 +64,25 @@ ESTILO_PAGINA = {
 ESTILO_BARRA_LATERAL = {
     "width": "240px",
     "flexShrink": "0",
-    "backgroundColor": "white",
+    "backgroundColor": SUPERFICIE,
     "padding": "24px 16px",
-    "borderRight": "1px solid #E1E5EB",
+    "borderRight": f"1px solid {BORDE}",
 }
 ESTILO_CONTENIDO = {"flex": "1", "padding": "24px", "minWidth": "0"}
 ESTILO_FILA = {"display": "flex", "gap": "16px", "marginBottom": "16px"}
 ESTILO_TARJETA = {
     "flex": "1",
-    "backgroundColor": "white",
-    "borderRadius": "8px",
+    "backgroundColor": SUPERFICIE,
+    "borderRadius": "12px",
     "padding": "16px",
-    "boxShadow": "0 1px 3px rgba(0,0,0,0.08)",
+    "border": f"1px solid {BORDE}",
 }
 ESTILO_ETIQUETA = {"fontWeight": "600", "fontSize": "13px", "color": TINTA,
                    "display": "block", "marginTop": "14px", "marginBottom": "4px"}
 ESTILO_TITULO_SECCION = {"fontSize": "12px", "fontWeight": "700", "color": GRIS,
                          "letterSpacing": "0.5px", "margin": "24px 0 4px 0"}
 ESTILO_MENU = {"padding": "8px 10px", "borderRadius": "6px", "color": TINTA, "fontSize": "14px"}
-ESTILO_MENU_ACTIVO = {**ESTILO_MENU, "backgroundColor": "#E8ECF4", "fontWeight": "600",
-                      "borderLeft": f"3px solid {TINTA}"}
+ESTILO_MENU_ACTIVO = {**ESTILO_MENU, "backgroundColor": MARCA, "color": "white", "fontWeight": "600"}
 
 # =============================================================================
 # 2. Datos (misma preparación que la versión de Streamlit)
@@ -348,6 +374,11 @@ abrir **tickets de soporte** se asocia con *menos* churn: quien pide ayuda sigue
 - Solo se usa WhatsApp Web: Instagram, Facebook y la API tienen desconexiones faltantes y borrados masivos.
   En julio hubo una migración técnica que generó desconexiones que no son decisión del cliente.
 - Solo se incluyen cuentas con al menos 3 meses seguidos de historial.
+
+**Score del modelo.** La sección "¿Quién está en riesgo hoy?" usa el modelo de la Evidencia 4 (Extra Trees
+calibrado) para estimar la probabilidad de cancelar en los 60 días siguientes al 31-oct-2026, y los perfiles
+de adopción de K-Means para sugerir la acción. El notebook de la Evidencia 5 entrena ambos modelos y genera
+`datos/scores_modelo_hoy.csv`.
 """
 
 # =============================================================================
@@ -364,11 +395,11 @@ COLUMNAS_RIESGO = ["Account ID", "Plan", "Segmento", "Industria", "Chats del mes
 
 
 def ajustar(fig):
-    fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), plot_bgcolor="white",
-                      font_family="Segoe UI, Helvetica, Arial, sans-serif",
+    fig.update_layout(margin=dict(l=10, r=10, t=50, b=10), plot_bgcolor=SUPERFICIE, paper_bgcolor=SUPERFICIE,
+                      font_family=FUENTE, font_color=TINTA,
                       title_font_size=15, title_font_color=TINTA)
-    fig.update_xaxes(automargin=True)
-    fig.update_yaxes(automargin=True)
+    fig.update_xaxes(automargin=True, gridcolor=BORDE, zerolinecolor=BORDE)
+    fig.update_yaxes(automargin=True, gridcolor=BORDE, zerolinecolor=BORDE)
     return fig
 
 
@@ -487,7 +518,7 @@ def figura_motivos(df):
     fig = px.bar(
         datos, x="size", y="motivo", color="Actividad al corte", orientation="h",
         title=titulo, labels={"size": "Cuentas", "motivo": ""},
-        color_discrete_map={"Con caída ≥50%": ROJO, "Sin caída": GRIS_BARRA, "No medible": "#D5D8DC"},
+        color_discrete_map={"Con caída ≥50%": ROJO, "Sin caída": GRIS_BARRA, "No medible": NEUTRO},
     )
     return ajustar(fig)
 
@@ -509,11 +540,81 @@ def tabla_en_riesgo(df):
     }, columns=COLUMNAS_RIESGO)
 
 
+# --- Score del modelo de la Evidencia 4 (la foto de hoy: 31-oct-2026) ---
+COLUMNAS_SCORE = ["Account ID", "Plan", "Segmento", "Industria", "Perfil", "Score (%)", "Decil",
+                  "Variación de chats (%)", "Días activos (%)", "WhatsApp Web"]
+
+
+def cargar_scores(carpeta):
+    """Score de riesgo (Extra Trees calibrado) y perfil de adopción (K-Means) de cada cuenta activa
+    al 31-oct-2026. No se entrena nada aquí: el notebook de la Evidencia 5 entrena los modelos y
+    exporta datos/scores_modelo_hoy.csv. Si el archivo no existe, la sección queda vacía con un aviso."""
+    ruta = carpeta / "scores_modelo_hoy.csv"
+    if not ruta.exists():
+        return None
+    scores = pd.read_csv(ruta, parse_dates=["corte"])
+    # En el archivo, "segmento" es el perfil de K-Means; aquí se llama "perfil" para no confundirlo
+    # con el segmento de negocio que usan los filtros. Plan, segmento e industria salen del corte de octubre.
+    scores = scores.rename(columns={"segmento": "perfil", "variacion_chats_%": "variacion_chats"})
+    datos_corte = base.loc[base["corte"] == scores["corte"].max(), ["account_id", "segmento", "industria"]]
+    return scores.merge(datos_corte, on="account_id", how="left")
+
+
+SCORES = cargar_scores(CARPETA_DATOS)
+
+
+def indicadores_score(hoy):
+    decil_1 = hoy[hoy["decil_riesgo"] == 1]
+    return (
+        f"{len(hoy):,}",
+        f"{len(decil_1):,}",
+        f"{(hoy['score'] >= UMBRAL_MODELO).sum():,}",
+        f"{(decil_1['estado_wa'] == 'Desconectado').sum():,}",
+    )
+
+
+def figura_score_perfil(hoy):
+    titulo = "Cuentas del decil 1 por perfil de adopción (K-Means)"
+    if hoy.empty:
+        return figura_vacia(titulo)
+    datos = (
+        hoy.groupby("perfil")
+        .agg(cuentas=("account_id", "size"), decil_1=("decil_riesgo", lambda d: (d == 1).sum()))
+        .reindex(list(COLOR_PERFIL)).dropna().reset_index()
+    )
+    fig = px.bar(
+        datos, x="decil_1", y="perfil", color="perfil", orientation="h", text_auto=True,
+        title=titulo, labels={"decil_1": "Cuentas en el decil 1", "perfil": ""},
+        hover_data={"cuentas": True}, category_orders={"perfil": list(COLOR_PERFIL)},
+        color_discrete_map=COLOR_PERFIL,
+    )
+    fig.update_layout(showlegend=False)
+    return ajustar(fig)
+
+
+def tabla_score(hoy, perfiles):
+    lista = hoy[hoy["perfil"].isin(perfiles)].sort_values(["score", "variacion_chats"], ascending=[False, True])
+    return pd.DataFrame({
+        "Account ID": lista["account_id"],
+        "Plan": lista["plan"],
+        "Segmento": lista["segmento"],
+        "Industria": lista["industria"],
+        "Perfil": lista["perfil"],
+        "Score (%)": (lista["score"] * 100).round(1),
+        "Decil": lista["decil_riesgo"],
+        "Variación de chats (%)": lista["variacion_chats"].round(0),
+        "Días activos (%)": (lista["prop_dias_activos"] * 100).round(0),
+        "WhatsApp Web": lista["estado_wa"],
+    }, columns=COLUMNAS_SCORE)
+
+
 # =============================================================================
 # 4. Pedazos de árbol reutilizables
 # =============================================================================
-ESTILO_AVISO = {"backgroundColor": "#FFF4E0", "color": "#A35E00", "padding": "12px 16px",
-                "borderRadius": "6px", "marginBottom": "16px", "fontWeight": "600"}
+# Aviso como en la Pantalla 6 de Figma: fondo blanco, borde naranja de advertencia y texto oscuro
+ESTILO_AVISO = {"backgroundColor": SUPERFICIE, "color": TINTA, "padding": "12px 16px",
+                "border": f"1.5px solid {ADVERTENCIA}", "borderLeft": f"6px solid {ADVERTENCIA}",
+                "borderRadius": "8px", "marginBottom": "16px", "fontWeight": "600"}
 ESTILO_NOTA_TARJETA = {"fontSize": "12px", "color": GRIS, "marginTop": "4px"}
 
 
@@ -552,9 +653,9 @@ def tabla(id_tabla, columnas, **extra):
         columns=[{"name": c, "id": c} for c in columnas],
         data=[],
         style_table={"overflowX": "auto"},
-        style_header={"backgroundColor": "#2F3A40", "color": "white", "fontWeight": "600"},
-        style_cell={"fontFamily": "Segoe UI, Helvetica, Arial, sans-serif", "fontSize": "13px",
-                    "padding": "6px", "textAlign": "left"},
+        style_header={"backgroundColor": TINTA, "color": "white", "fontWeight": "600"},
+        style_cell={"fontFamily": FUENTE, "fontSize": "13px", "color": TINTA,
+                    "padding": "6px", "textAlign": "left", "border": f"1px solid {BORDE}"},
         **extra,
     )
 
@@ -565,7 +666,7 @@ def tabla(id_tabla, columnas, **extra):
 app = Dash(__name__, title="LeadSales | Adopción y riesgo de churn")
 
 barra_lateral = html.Div([
-    html.Div("LeadSales", style={"fontSize": "22px", "fontWeight": "700", "color": TINTA}),
+    html.Div("leadsales", style={"fontSize": "24px", "fontWeight": "700", "color": MARCA}),
     html.Div("Adoption & Churn Monitor", style={"fontSize": "13px", "color": GRIS, "marginBottom": "16px"}),
 
     # --- Navegación entre pantallas (como en el wireframe) ---
@@ -662,6 +763,48 @@ contenido = html.Div([
                style={"color": GRIS, "fontSize": "12px", "marginBottom": "0"}),
     ], style={**ESTILO_TARJETA, "marginBottom": "16px"}),
 
+    # --- ¿Quién está en riesgo hoy? Score del modelo de la Evidencia 4 ---
+    html.H3("¿Quién está en riesgo hoy? Score del modelo", style={"color": TINTA, "marginBottom": "4px"}),
+    html.P([
+        "Probabilidad de cancelar en los 60 días siguientes al 31-oct-2026, según el modelo Extra Trees "
+        "calibrado de la Evidencia 4. Usa los filtros de plan, segmento e industria; el periodo no aplica porque "
+        "el score es la foto de hoy. En la prueba de agosto, el ",
+        html.B("decil 1"), " (10 % de cuentas con mayor score) canceló ", html.B("2.3 veces"), " más que el promedio.",
+    ], style={"color": GRIS, "fontSize": "13px", "marginTop": "0"}),
+    html.Div(id="aviso-score"),
+    html.Div([
+        tarjeta("Cuentas evaluadas hoy", "kpi-score-cuentas", nota="Activas al 31-oct-2026"),
+        tarjeta("Prioridad: decil 1", "kpi-score-decil", nota="10 % de mayor score de la cartera", alerta=True),
+        tarjeta("Sobre el umbral del modelo", "kpi-score-umbral", nota=f"Score ≥ {UMBRAL_MODELO:.1%} (umbral F2)"),
+        tarjeta("Decil 1 con WhatsApp Web desconectado", "kpi-score-wa", nota="Revisar primero el canal"),
+    ], style=ESTILO_FILA),
+    html.Div([
+        html.Div(grafica("grafica-score-perfil", alto="300px"), style={"flex": "3"}),
+        html.Div([
+            html.Div("Qué hacer con cada perfil", style={"fontWeight": "700", "color": TINTA, "marginBottom": "8px"}),
+            *[html.Div([
+                html.Span(perfil, style={"backgroundColor": color, "color": "white", "fontWeight": "600",
+                                         "fontSize": "12px", "padding": "3px 10px", "borderRadius": "999px"}),
+                html.Div(ACCION_PERFIL[perfil], style={"fontSize": "13px", "color": TINTA, "margin": "6px 0 14px 0"}),
+            ]) for perfil, color in COLOR_PERFIL.items()],
+        ], style={**ESTILO_TARJETA, "flex": "2"}),
+    ], style=ESTILO_FILA),
+    html.Div([
+        html.Label("Ver perfiles", style={**ESTILO_ETIQUETA, "marginTop": "0"}),
+        dcc.Dropdown(id="filtro-perfil", options=list(COLOR_PERFIL), value=list(COLOR_PERFIL), multi=True),
+        html.P(id="texto-score", style={"color": GRIS, "fontSize": "13px"}),
+        tabla("tabla-score", COLUMNAS_SCORE, page_size=10, sort_action="native",
+              export_format="csv", export_headers="display",
+              style_data_conditional=[
+                  {"if": {"filter_query": "{Decil} = 1", "column_id": "Score (%)"}, "color": ROJO, "fontWeight": "700"},
+                  *[{"if": {"filter_query": f'{{Perfil}} = "{perfil}"', "column_id": "Perfil"}, "color": color,
+                     "fontWeight": "600"} for perfil, color in COLOR_PERFIL.items()],
+              ]),
+        html.P("El botón Export descarga la lista de revisión. El score ordena a quién llamar primero; el perfil "
+               "dice qué ofrecer. Es una probabilidad, no una certeza: muchas cuentas del decil 1 no cancelan.",
+               style={"color": GRIS, "fontSize": "12px", "marginBottom": "0"}),
+    ], style={**ESTILO_TARJETA, "marginBottom": "16px"}),
+
     # --- Gráfica ancha ---
     html.Div(grafica("grafica-antes-baja", alto="340px"), style={"marginBottom": "16px"}),
 
@@ -710,12 +853,21 @@ app.layout = html.Div([barra_lateral, contenido], style=ESTILO_PAGINA)
     Output("tabla-riesgo", "data"),            # 15
     Output("grafica-motivos", "figure"),       # 16
     Output("aviso-vacio", "children"),         # 17
+    Output("kpi-score-cuentas", "children"),   # 18  (Evidencia 5: score del modelo)
+    Output("kpi-score-decil", "children"),     # 19
+    Output("kpi-score-umbral", "children"),    # 20
+    Output("kpi-score-wa", "children"),        # 21
+    Output("grafica-score-perfil", "figure"),  # 22
+    Output("texto-score", "children"),         # 23
+    Output("tabla-score", "data"),             # 24
+    Output("aviso-score", "children"),         # 25
     Input("filtro-periodo", "value"),
     Input("filtro-plan", "value"),
     Input("filtro-segmento", "value"),
     Input("filtro-industria", "value"),
+    Input("filtro-perfil", "value"),
 )
-def actualizar(rango, planes, segmentos, industrias):
+def actualizar(rango, planes, segmentos, industrias, perfiles):
     inicio, fin = CORTES[rango[0]], CORTES[rango[1]]
     texto_periodo = f"Periodo: {etiqueta_mes(inicio)} a {etiqueta_mes(fin)} · Datos al 31-oct-2026"
     industrias = industrias or TODAS_INDUSTRIAS  # Industria vacía = todas
@@ -727,6 +879,27 @@ def actualizar(rango, planes, segmentos, industrias):
         & base["segmento"].isin(segmentos or [])
         & base["industria"].isin(industrias)
     ]
+
+    # --- Score de hoy: mismos filtros de plan, segmento e industria (el periodo no aplica) ---
+    if SCORES is None:
+        hoy = pd.DataFrame(columns=["account_id", "decil_riesgo", "score", "estado_wa", "perfil"])
+        aviso_score = html.Div("Falta datos/scores_modelo_hoy.csv: ejecuta el notebook de la Evidencia 5 "
+                               "para generarlo.", style=ESTILO_AVISO)
+    else:
+        hoy = SCORES[SCORES["plan"].isin(planes or []) & SCORES["segmento"].isin(segmentos or [])
+                     & SCORES["industria"].isin(industrias)]
+        aviso_score = None
+    if hoy.empty:
+        salida_score = ("—", "—", "—", "—", figura_vacia("Sin cuentas con score para estos filtros"), "", [], aviso_score)
+    else:
+        lista = tabla_score(hoy, perfiles or [])
+        salida_score = (
+            *indicadores_score(hoy),                                         # 18-21
+            figura_score_perfil(hoy),                                        # 22
+            f"{len(lista):,} cuentas, de mayor a menor score. Empates: primero la mayor caída de chats.",  # 23
+            registros(lista),                                                # 24
+            aviso_score,                                                     # 25
+        )
 
     # --- Selección vacía: misma cantidad de valores que el return normal ---
     if filtrados.empty:
@@ -745,6 +918,7 @@ def actualizar(rango, planes, segmentos, industrias):
             [],                             # 15
             vacia,                          # 16
             aviso,                          # 17
+            *salida_score,                  # 18-25
         )
 
     # --- Cálculos con los datos filtrados ---
@@ -793,6 +967,7 @@ def actualizar(rango, planes, segmentos, industrias):
         registros(riesgo),                               # 15
         figura_motivos(filtrados),                       # 16
         aviso,                                           # 17
+        *salida_score,                                   # 18-25
     )
 
 

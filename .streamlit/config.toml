@@ -1,0 +1,11 @@
+# Tema del tablero de Streamlit: la misma paleta del prototipo de Figma (Evidencia 5).
+# 60 % fondo y superficies · 30 % marca LeadSales · texto oscuro con contraste WCAG 13.3:1.
+# Streamlit lee este archivo cuando se ejecuta desde la raíz del repositorio:
+#     streamlit run app/app.py
+[theme]
+base = "light"
+primaryColor = "#4145E3"              # 30 % · marca LeadSales (botones, filtros, pestaña activa)
+backgroundColor = "#F5F6FA"           # 60 % · fondo de la página
+secondaryBackgroundColor = "#FFFFFF"  # 60 % · barra lateral y controles
+textColor = "#202B37"                 # texto principal
+font = "sans serif"

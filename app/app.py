@@ -9,6 +9,11 @@ Datos v3 (corte 31-oct-2026):
     - panel_mensual.csv   una fila por cuenta y mes (uso, días activos, plan...)
     - perfil_cuentas.csv  una fila por cuenta (fecha de baja = desenlace)
     - cancelaciones.csv   motivo que dio cada cuenta al cancelar
+    - scores_modelo_hoy.csv  score de riesgo (Extra Trees) y perfil (K-Means) de cada cuenta
+                             al 31-oct-2026; lo genera el notebook de la Evidencia 5
+
+Colores: misma paleta del prototipo de Figma (Evidencia 5). El tema general está en
+.streamlit/config.toml y los colores de las gráficas, abajo (PALETA).
 """
 
 from pathlib import Path
@@ -75,8 +80,30 @@ INDUSTRIAS = {
     "No declarada": "Otra / no declarada",
 }
 
-COLOR_CON = "#C0392B"  # con caída de actividad
-COLOR_SIN = "#7F8C8D"  # sin caída
+# --- Paleta del tablero (la misma del prototipo de Figma y del notebook de la Evidencia 5) ---
+# Sale del azul de LeadSales #4145E3 con la teoría del color de la clase:
+#   60 % fondo neutro · 30 % marca · 10 % acento (complementario, solo para acciones)
+#   rojo, naranja y verde solo con su significado (riesgo, advertencia, éxito)
+MARCA = "#4145E3"        # 30 % · serie de referencia ("sin la señal", "conectado")
+RIESGO = "#DC2626"       # semántico · la señal de riesgo
+ADVERTENCIA = "#C2410C"  # semántico · atención (pasa WCAG con texto blanco: 5.2:1)
+NEUTRO = "#C5C9D4"       # casos que no se pueden medir
+
+COLOR_CON = RIESGO  # con la señal de baja adopción
+COLOR_SIN = MARCA   # sin la señal
+
+# Perfiles de adopción del K-Means de la Evidencia 4: un color por perfil en todo el tablero
+COLOR_PERFIL = {
+    "Descenso de actividad": RIESGO,
+    "Uso muy bajo o nulo": ADVERTENCIA,
+    "Uso estable": MARCA,
+}
+ACCION_PERFIL = {
+    "Descenso de actividad": "Primera prioridad: llamada de diagnóstico, revisar si WhatsApp Web está desconectado y ofrecer capacitación.",
+    "Uso muy bajo o nulo": "Reactivación o ajuste de plan antes de su renovación.",
+    "Uso estable": "Seguimiento normal; atender solo si entra al decil 1 o desconecta WhatsApp Web.",
+}
+UMBRAL_MODELO = 0.095  # umbral del modelo elegido con F2 en la Evidencia 4
 
 
 def etiqueta_mes(fecha):
@@ -286,7 +313,23 @@ def cargar(carpeta):
     return base, antes_baja, motivos
 
 
+@st.cache_data
+def cargar_scores(carpeta):
+    """Score de riesgo del modelo de la Evidencia 4 para cada cuenta activa al 31-oct-2026.
+    No se entrena nada aquí: el notebook de la Evidencia 5 entrena el modelo (Extra Trees calibrado)
+    y los perfiles (K-Means) y exporta el resultado a datos/scores_modelo_hoy.csv.
+    Si el archivo no existe, el tablero funciona igual y solo oculta esta sección."""
+    ruta = carpeta / "scores_modelo_hoy.csv"
+    if not ruta.exists():
+        return None
+    scores = pd.read_csv(ruta, parse_dates=["corte"])
+    # En el archivo, "segmento" es el perfil de K-Means; aquí se llama "perfil" para no
+    # confundirlo con el segmento de negocio (B&L, WAPI...) que usan los filtros.
+    return scores.rename(columns={"segmento": "perfil", "variacion_chats_%": "variacion_chats"})
+
+
 base, antes_baja, motivos = cargar(CARPETA_DATOS)
+scores = cargar_scores(CARPETA_DATOS)
 
 # --- Barra lateral: marca y filtros (opciones generadas desde los datos) ---
 with st.sidebar:
@@ -462,6 +505,109 @@ else:
 
 st.divider()
 
+# --- ¿Quién está en riesgo hoy? Score del modelo de la Evidencia 4 ---
+st.subheader("¿Quién está en riesgo hoy? Score del modelo")
+if scores is None:
+    st.info(
+        "Falta el archivo datos/scores_modelo_hoy.csv. Ejecuta el notebook de la Evidencia 5 "
+        "para generarlo y vuelve a cargar el tablero."
+    )
+else:
+    st.caption(
+        "Probabilidad de cancelar en los 60 días siguientes al **31-oct-2026**, según el modelo Extra Trees "
+        "calibrado de la Evidencia 4. Usa los filtros de plan, segmento e industria; el periodo no aplica "
+        "porque el score es la foto de hoy. En la prueba de agosto, el **decil 1** (10 % de cuentas con mayor "
+        "score) canceló **2.3 veces** más que el promedio."
+    )
+    # Plan, segmento e industria vienen del corte de octubre del tablero
+    datos_corte = base.loc[base["corte"] == scores["corte"].max(), ["account_id", "segmento", "industria"]]
+    hoy = scores.merge(datos_corte, on="account_id", how="left")
+    hoy = hoy[hoy["plan"].isin(planes) & hoy["segmento"].isin(segmentos) & hoy["industria"].isin(industrias)]
+
+    if hoy.empty:
+        st.warning("No hay cuentas con score para esos filtros. Amplía la selección.")
+    else:
+        decil_1 = hoy[hoy["decil_riesgo"] == 1]
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Cuentas evaluadas hoy", f"{len(hoy):,}")
+        k2.metric("Prioridad: decil 1", f"{len(decil_1):,}", help="Cuentas en el 10 % de mayor score de toda la cartera")
+        k3.metric(
+            "Sobre el umbral del modelo",
+            f"{(hoy['score'] >= UMBRAL_MODELO).sum():,}",
+            help=f"Score ≥ {UMBRAL_MODELO:.1%}: umbral elegido con F2 en la Evidencia 4 (prioriza no perder cancelaciones)",
+        )
+        k4.metric(
+            "Decil 1 con WhatsApp Web desconectado",
+            f"{(decil_1['estado_wa'] == 'Desconectado').sum():,}",
+            help="Revisar primero el canal: puede ser un problema técnico con solución rápida",
+        )
+
+        col_perfil, col_accion = st.columns([3, 2])
+        por_perfil = (
+            hoy.groupby("perfil")
+            .agg(cuentas=("account_id", "size"), decil_1=("decil_riesgo", lambda d: (d == 1).sum()))
+            .reindex(list(COLOR_PERFIL))
+            .dropna()
+            .reset_index()
+        )
+        col_perfil.plotly_chart(
+            px.bar(
+                por_perfil, x="decil_1", y="perfil", color="perfil", orientation="h", text_auto=True,
+                title="Cuentas del decil 1 por perfil de adopción (K-Means)",
+                labels={"decil_1": "Cuentas en el decil 1", "perfil": ""},
+                hover_data={"cuentas": True},
+                category_orders={"perfil": list(COLOR_PERFIL)},
+                color_discrete_map=COLOR_PERFIL,
+            ).update_layout(showlegend=False),
+            width="stretch",
+        )
+        col_accion.markdown("**Qué hacer con cada perfil**")
+        for perfil, accion in ACCION_PERFIL.items():
+            col_accion.markdown(f"- **{perfil}:** {accion}")
+
+        perfiles_elegidos = st.multiselect(
+            "Ver perfiles", options=list(COLOR_PERFIL), default=list(COLOR_PERFIL), key="perfiles_score"
+        )
+        lista = hoy[hoy["perfil"].isin(perfiles_elegidos)].sort_values(
+            ["score", "variacion_chats"], ascending=[False, True]
+        )
+        lista_score = pd.DataFrame({
+            "Account ID": lista["account_id"],
+            "Plan": lista["plan"],
+            "Segmento": lista["segmento"],
+            "Industria": lista["industria"],
+            "Perfil": lista["perfil"],
+            "Score (%)": (lista["score"] * 100).round(1),
+            "Decil": lista["decil_riesgo"],
+            "Variación de chats (%)": lista["variacion_chats"].round(0),
+            "Días activos (%)": (lista["prop_dias_activos"] * 100).round(0),
+            "WhatsApp Web": lista["estado_wa"],
+        })
+        st.caption(f"{len(lista_score):,} cuentas, de mayor a menor score. Empates: primero la mayor caída de chats.")
+        st.dataframe(
+            lista_score,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "Score (%)": st.column_config.ProgressColumn(
+                    "Score (%)", min_value=0, max_value=float(max(35, lista_score["Score (%)"].max())), format="%.1f"
+                ),
+            },
+        )
+        st.download_button(
+            "Descargar lista de revisión (CSV)",
+            data=lista_score.to_csv(index=False).encode("utf-8"),
+            file_name="lista_revision_score_2026-10.csv",
+            mime="text/csv",
+            type="primary",
+        )
+        st.caption(
+            "El score ordena a quién llamar primero; el perfil dice qué ofrecer. Es una probabilidad, no una "
+            "certeza: muchas cuentas del decil 1 no cancelan."
+        )
+
+st.divider()
+
 # --- Bloque inferior: detalle en pestañas ---
 tab1, tab2, tab3, tab4 = st.tabs(
     ["Cuentas con mayor caída", "Uso antes de cancelar", "¿Por qué se van?", "Cómo leer el tablero"]
@@ -578,7 +724,7 @@ with tab3:
                 orientation="h",
                 title="¿Qué dijeron al cancelar?",
                 labels={"size": "Cuentas", "motivo": ""},
-                color_discrete_map={"Con caída ≥50%": COLOR_CON, "Sin caída": COLOR_SIN, "No medible": "#D5D8DC"},
+                color_discrete_map={"Con caída ≥50%": COLOR_CON, "Sin caída": COLOR_SIN, "No medible": NEUTRO},
             ),
             width="stretch",
         )
@@ -612,6 +758,11 @@ Evidencia 4 (que medía la conexión de otra forma, como % del tiempo conectado 
 mejoró la predicción de forma consistente una vez que ya se conocía el uso. Por eso lo usamos como señal
 complementaria y de diagnóstico (¿la caída es un problema técnico?). La **mora** duplica el riesgo, y
 abrir **tickets de soporte** se asocia con *menos* churn: quien pide ayuda sigue comprometido.
+
+**Score del modelo.** La sección "¿Quién está en riesgo hoy?" usa el modelo de la Evidencia 4
+(Extra Trees calibrado) para estimar la probabilidad de cancelar en los 60 días siguientes al 31-oct-2026,
+y los perfiles de adopción de K-Means (descenso de actividad, uso muy bajo o nulo, uso estable) para
+sugerir la acción. El notebook de la Evidencia 5 entrena ambos modelos y genera `datos/scores_modelo_hoy.csv`.
 
 **Limitaciones**
 - Es una **asociación**, no una causa: una caída no significa que la cuenta se vaya a ir.
