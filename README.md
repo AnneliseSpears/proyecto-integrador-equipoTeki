@@ -47,7 +47,7 @@ Este enfoque es también más fiel al wireframe del Dashboard principal en Figma
 
 ## Colores (Evidencia 5)
 
-Streamlit, Dash y el prototipo de Figma usan la misma paleta, construida desde el azul de LeadSales con la teoría del color de la clase:
+Streamlit, Dash y el prototipo de Figma usan la misma paleta:
 
 | Rol | Color | Uso |
 |---|---|---|
