@@ -63,8 +63,27 @@ Esto lo tomaremos en cuenta en la sesión de Dash, que permite colocar elementos
 
 # Laboratorio 10 · Datos, filtros y caché
 
-## Medir el caché
+## Datos que usamos
 
-Sin @st.cache_data: 1er carga --> ~3 segundos, Al mover el filtro --> 2 segundos
+En lugar del `ventas.csv` de ejemplo usamos los datos propios del proyecto (versión 3 de LeadSales, corte 31-oct-2026), guardados en `datos/`:
 
-Con @st.cache_data: 1er carga --> 1 segundo, Al mover el filtro --> casi inmediata
+- `panel_mensual.csv`: uso por cuenta y mes (chats, días activos, plan, segmento, industria).
+- `perfil_cuentas.csv`: fecha de alta y de baja de cada cuenta.
+- `cancelaciones.csv`: motivo que dio cada cuenta al cancelar.
+
+Los tres se leen con una ruta construida con `Path(__file__)` y con `parse_dates` en sus columnas de fecha. Los filtros (periodo, plan, segmento e industria) sacan sus opciones de los datos, y todo el tablero se calcula a partir de un solo bloque de filtrado.
+
+## Parte C · Medición del caché
+
+Simulamos una fuente lenta con `time.sleep(2)` dentro de la función que carga los datos. Medimos con cronómetro, moviendo los filtros de plan, segmento e industria.
+
+| | Primera carga | Al mover el filtro |
+|---|---|---|
+| Sin `@st.cache_data` | 3 s | 5 s |
+| Con `@st.cache_data` | 5 s | 4.6 s en promedio (6, 7, 4, 2 y 4 s en 5 intentos) |
+
+**Conclusión:** sin caché, cada vez que movemos un filtro Streamlit vuelve a correr el script completo y vuelve a leer los tres archivos, con todo y la espera de la consulta lenta. Con `@st.cache_data`, la primera carga sigue tardando porque es la que llena el caché, pero después los datos ya no se vuelven a leer y lo que queda es solo recalcular y dibujar el tablero.
+
+**Nota sobre nuestra medición:** la diferencia que medimos fue menor que los 2 segundos de la espera simulada. Lo atribuimos a dos cosas: medimos a mano con cronómetro, lo que tiene un margen de error de 1 a 2 segundos, y nuestro tablero tarda varios segundos en dibujar sus gráficas y tablas en la laptop, con o sin caché. Aun así, dejamos el `@st.cache_data`, porque en Render, con datos reales y varias personas conectadas, leer los archivos en cada interacción sí haría lenta la aplicación.
+
+Al terminar la medición quitamos el `time.sleep(2)` y el `import time`, y dejamos el `@st.cache_data`.
